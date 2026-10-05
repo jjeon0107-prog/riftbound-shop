@@ -1,0 +1,1033 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>리프트바운드 오리진 카드샵</title>
+<link rel="stylesheet" href="style.css">
+
+<style>
+.card.soldout{opacity:.72}
+.card.soldout .img{filter:grayscale(.28)}
+.soldout-badge{
+  display:inline-block;
+  margin-top:6px;
+  padding:4px 7px;
+  border-radius:999px;
+  background:#ececef;
+  color:#666;
+  font-size:11px;
+  font-weight:700;
+}
+.buyrow button:disabled{
+  opacity:.35;
+  cursor:not-allowed;
+}
+
+.foil-badge{
+  position:absolute;
+  top:7px;
+  left:7px;
+  z-index:5;
+  padding:5px 9px;
+  border-radius:8px;
+  color:#111;
+  font-size:10px;
+  font-weight:950;
+  letter-spacing:.08em;
+  border:1px solid rgba(255,255,255,.8);
+  background:
+    linear-gradient(115deg,
+      rgba(255,255,255,.98) 0%,
+      rgba(255,205,247,.98) 18%,
+      rgba(185,230,255,.98) 36%,
+      rgba(255,248,170,.98) 54%,
+      rgba(210,188,255,.98) 72%,
+      rgba(255,255,255,.98) 100%);
+  background-size:220% 220%;
+  box-shadow:0 2px 7px rgba(0,0,0,.3), inset 0 0 5px rgba(255,255,255,.9);
+  animation:foilShine 2.2s linear infinite;
+}
+@keyframes foilShine{
+  0%{background-position:0% 50%;filter:brightness(1)}
+  50%{background-position:100% 50%;filter:brightness(1.2)}
+  100%{background-position:0% 50%;filter:brightness(1)}
+}
+
+.shop-notice{
+  margin:8px 0 10px;
+  padding:11px 12px;
+  border:1px solid var(--line);
+  border-radius:10px;
+  background:#fff;
+  font-size:13px;
+  line-height:1.7;
+  font-weight:650;
+}
+.shop-notice div+div{margin-top:2px}
+@media(max-width:800px){
+  .shop-notice{
+    font-size:12.5px;
+    line-height:1.65;
+    padding:10px 11px;
+  }
+}
+
+
+.last-updated{
+  margin:2px 0 7px;
+  font-size:11px;
+  color:var(--muted);
+  font-weight:650;
+}
+@media(max-width:800px){
+  .last-updated{font-size:10.5px}
+}
+
+
+.purchase-guide{
+  margin:8px 0 10px;
+  padding:11px 12px;
+  border:1px solid #dfe6ef;
+  border-radius:10px;
+  background:linear-gradient(180deg,#f8fbff 0%,#ffffff 100%);
+  box-shadow:0 1px 4px rgba(0,0,0,.04);
+}
+.purchase-guide-title{
+  font-size:13px;
+  line-height:1.6;
+  font-weight:800;
+  color:#1f2937;
+}
+.purchase-guide-notes{
+  margin-top:7px;
+  padding-top:7px;
+  border-top:1px dashed #d8dee8;
+  font-size:12.5px;
+  line-height:1.7;
+  font-weight:650;
+  color:#4b5563;
+}
+.purchase-guide-notes div+div{margin-top:1px}
+.purchase-guide-notes .dot{
+  color:#2563eb;
+  font-weight:900;
+}
+@media(max-width:800px){
+  .purchase-guide{
+    padding:10px 11px;
+  }
+  .purchase-guide-title{
+    font-size:12.5px;
+  }
+  .purchase-guide-notes{
+    font-size:12px;
+  }
+}
+
+
+.signature-badge{
+  position:absolute;
+  top:7px;
+  right:7px;
+  z-index:7;
+  padding:4px 8px;
+  border-radius:7px;
+  color:#3a2500;
+  font-size:9px;
+  font-weight:950;
+  letter-spacing:.06em;
+  border:1px solid rgba(255,245,180,.95);
+  background:
+    linear-gradient(115deg,
+      #fff7bf 0%,
+      #d9a928 18%,
+      #fff1a8 36%,
+      #b87b00 54%,
+      #ffe36d 72%,
+      #fff8d2 100%);
+  background-size:220% 220%;
+  box-shadow:0 1px 6px rgba(120,75,0,.35), inset 0 0 5px rgba(255,255,255,.8);
+  animation:signatureShine 2.4s linear infinite;
+}
+@keyframes signatureShine{
+  0%{background-position:0% 50%;filter:brightness(1)}
+  50%{background-position:100% 50%;filter:brightness(1.18)}
+  100%{background-position:0% 50%;filter:brightness(1)}
+}
+
+
+.top .purchase-guide{
+  margin:6px 0 0;
+  padding:8px 10px;
+}
+.top .purchase-guide-title{
+  font-size:12px;
+  line-height:1.45;
+}
+.top .purchase-guide-notes{
+  margin-top:5px;
+  padding-top:5px;
+  font-size:11px;
+  line-height:1.5;
+}
+@media(max-width:800px){
+  .top .purchase-guide{
+    margin-top:5px;
+    padding:7px 8px;
+  }
+  .top .purchase-guide-title{font-size:11.5px}
+  .top .purchase-guide-notes{font-size:10.5px;line-height:1.45}
+}
+
+
+body.cart-open{
+  overflow:hidden!important;
+}
+.cart-drawer.open{
+  display:flex!important;
+  align-items:flex-end;
+}
+.cart-sheet{
+  display:flex!important;
+  flex-direction:column;
+  max-height:88dvh!important;
+  height:min(88dvh,760px);
+}
+.cart-sheet-head,
+.cart-footer{
+  flex:0 0 auto;
+}
+.cart-list{
+  flex:1 1 auto!important;
+  min-height:0!important;
+  max-height:none!important;
+  overflow-y:auto!important;
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior:contain;
+}
+@supports not (height: 1dvh){
+  .cart-sheet{height:88vh}
+}
+
+
+/* v16 stability override */
+.cart-drawer{
+  position:fixed!important;
+  inset:0!important;
+  z-index:9999!important;
+}
+.cart-drawer:not(.open){
+  display:none!important;
+}
+.cart-drawer.open{
+  display:flex!important;
+  align-items:flex-end!important;
+}
+.cart-drawer.open .cart-sheet{
+  width:100%!important;
+  max-height:88dvh!important;
+  display:flex!important;
+  flex-direction:column!important;
+}
+.cart-drawer.open .cart-list{
+  flex:1 1 auto!important;
+  min-height:80px!important;
+  overflow-y:auto!important;
+  -webkit-overflow-scrolling:touch;
+}
+
+
+#sortOrder{min-width:132px}
+@media(max-width:800px){
+  #sortOrder{min-width:0}
+}
+
+</style>
+
+
+<style>
+/* v4 public shop: soldout overlay + cart drawer */
+.card{position:relative}
+.card.soldout{opacity:1}
+.card.soldout .img{filter:brightness(.42) grayscale(.25)}
+.soldout-overlay{
+  position:absolute;
+  top:38%;
+  left:50%;
+  transform:translate(-50%,-50%);
+  z-index:3;
+  padding:7px 13px;
+  border-radius:999px;
+  background:rgba(0,0,0,.72);
+  color:#fff;
+  font-size:14px;
+  font-weight:800;
+  letter-spacing:.08em;
+  pointer-events:none;
+}
+.cartbar .cartinner{
+  grid-template-columns:1fr auto auto auto;
+}
+#cartViewBtn{
+  background:#fff;
+  color:#111;
+}
+.cart-drawer{
+  position:fixed;
+  inset:0;
+  z-index:50;
+  display:none;
+  background:rgba(0,0,0,.38);
+}
+.cart-drawer.open{display:block}
+.cart-sheet{
+  position:absolute;
+  left:0;
+  right:0;
+  bottom:0;
+  max-height:78vh;
+  background:#fff;
+  border-radius:18px 18px 0 0;
+  box-shadow:0 -12px 30px rgba(0,0,0,.16);
+  overflow:hidden;
+}
+.cart-sheet-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  padding:12px 14px;
+  border-bottom:1px solid var(--line);
+}
+.cart-sheet-head h2{
+  margin:0;
+  font-size:17px;
+}
+.cart-sheet-head button{
+  border:1px solid var(--line);
+  background:#fff;
+  border-radius:8px;
+  padding:7px 10px;
+}
+.cart-list{
+  overflow:auto;
+  max-height:52vh;
+  padding:8px 12px;
+}
+.cart-empty{
+  padding:35px 10px;
+  text-align:center;
+  color:var(--muted);
+}
+.cart-item{
+  display:grid;
+  grid-template-columns:52px 1fr auto;
+  gap:8px;
+  align-items:center;
+  padding:8px 0;
+  border-bottom:1px solid var(--line);
+}
+.cart-thumb{
+  width:52px;
+  aspect-ratio:5/7;
+  object-fit:cover;
+  border-radius:6px;
+  background:#eee;
+}
+.cart-info .cart-name{
+  font-size:12px;
+  font-weight:750;
+  line-height:1.25;
+}
+.cart-info .cart-meta{
+  font-size:9px;
+  color:var(--muted);
+  margin-top:2px;
+}
+.cart-info .cart-price{
+  font-size:11px;
+  font-weight:700;
+  margin-top:3px;
+}
+.cart-actions{
+  display:grid;
+  grid-template-columns:28px 34px 28px;
+  gap:3px;
+  align-items:center;
+}
+.cart-actions button{
+  border:1px solid var(--line);
+  background:#fff;
+  border-radius:6px;
+  height:30px;
+}
+.cart-actions .cart-q{
+  text-align:center;
+  font-size:11px;
+}
+.cart-remove{
+  grid-column:1/-1;
+  font-size:9px;
+  color:#a33;
+  height:25px!important;
+}
+.cart-footer{
+  padding:10px 12px 14px;
+  border-top:1px solid var(--line);
+  background:#fafafa;
+}
+.cart-total{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  font-size:14px;
+  font-weight:800;
+  margin-bottom:8px;
+}
+.cart-footer-buttons{
+  display:grid;
+  grid-template-columns:1fr 1fr 1fr;
+  gap:6px;
+}
+.cart-footer-buttons button{
+  border:0;
+  border-radius:8px;
+  padding:10px 8px;
+  font-weight:700;
+}
+#clearCartBtn{background:#ececef;color:#444}
+#drawerCopyBtn{background:#222;color:#fff}
+#drawerKakaoBtn{background:#fee500;color:#111}
+@media(max-width:800px){
+  .cartbar .cartinner{
+    grid-template-columns:1fr auto;
+  }
+  .cartbar .cartinner button{
+    width:auto;
+  }
+  #copyBtn,#kakaoBtn{display:none}
+  #cartViewBtn{grid-column:auto}
+}
+</style>
+
+</head>
+<body>
+
+<header class="top">
+  <div class="head">
+    <h1 id="storeName">리프트바운드 오리진 카드샵</h1>
+
+    <div class="purchase-guide">
+      <div class="purchase-guide-title">구매희망 카드를 선택한 뒤 구매목록을 복사하여 카카오톡 보내주세요.</div>
+      <div class="purchase-guide-notes">
+        <div><span class="dot">•</span> 수량과 가격은 수시 업데이트 됩니다.</div>
+        <div><span class="dot">•</span> 입금순으로 먼저 판매됩니다.</div>
+        <div><span class="dot">•</span> 모든 포일 이상 카드는 슬리브 되어 있습니다.</div>
+        <div><span class="dot">•</span> 고가 카드는 슬리브/탑로더 해서 드립니다.</div>
+      </div>
+    </div>
+
+    <div class="sub" id="notice">전체 카드가 표시되며 판매수량 0장은 품절로 표시됩니다.</div>
+
+    <div class="toolbar">
+      <input id="q" placeholder="카드명 / 번호 검색">
+      <select id="rarity"><option value="">전체 레어도</option></select>
+      <select id="variant"><option value="">전체 유형</option></select>
+      <select id="finish">
+        <option value="">NORMAL+FOIL</option>
+        <option>NORMAL</option>
+        <option>FOIL</option>
+      </select>
+      <select id="sortOrder">
+        <option value="default">기본순</option>
+        <option value="price_desc">구매가격 높은순</option>
+        <option value="price_asc">구매가격 낮은순</option>
+        <option value="card_no">카드번호순</option>
+      </select>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div id="lastUpdated" class="last-updated">최종 업데이트 확인 중...</div>
+<div class="cards" id="cards">
+    <div class="empty">카드 목록을 불러오는 중...</div>
+  </div>
+  <div style="height:90px"></div>
+  <div class="sub" style="text-align:center;padding:12px 0 90px">
+    <span style="opacity:.45">build v18</span><br>
+    카드 이미지 © Riot Games · 비공식 개인 판매 페이지
+  </div>
+</main>
+
+<div class="cartbar">
+  <div class="cartinner">
+    <div>
+      <b id="cartSummary">선택 0장 · ₩0</b>
+      <div class="sub" style="color:#bbb">
+        구매목록을 복사한 뒤 카카오톡으로 보내주세요.
+      </div>
+    </div>
+    <button id="cartViewBtn" onclick="openCartDrawer();return false;">구매목록 보기</button>
+    <button id="copyBtn">구매목록 복사</button>
+    <button id="kakaoBtn">카카오톡 문의</button>
+  </div>
+</div>
+
+
+<div id="cartDrawer" class="cart-drawer">
+  <div class="cart-sheet">
+    <div class="cart-sheet-head">
+      <h2>구매목록</h2>
+      <button id="cartCloseBtn" onclick="closeCartDrawer();return false;">닫기</button>
+    </div>
+    <div id="cartList" class="cart-list"></div>
+    <div class="cart-footer">
+      <div class="cart-total">
+        <span id="drawerQty">총 0장</span>
+        <span id="drawerTotal">₩0</span>
+      </div>
+      <div class="cart-footer-buttons">
+        <button id="clearCartBtn">전체 비우기</button>
+        <button id="drawerCopyBtn">목록 복사</button>
+        <button id="drawerKakaoBtn">카카오 문의</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js?v=20261003-1"></script>
+<script>
+const bootError = (msg) => {
+  const el=document.querySelector("#cards");
+  if(el) el.innerHTML=`<div class="empty">${msg}<br><button onclick="location.reload()" style="margin-top:8px;padding:8px 12px">다시 불러오기</button></div>`;
+};
+
+if(!window.supabase){
+  bootError("카드 모듈을 불러오지 못했습니다. 페이지를 새로고침해 주세요.");
+  throw new Error("Supabase library not loaded");
+}
+
+if(!window.RIFTBOUND_CONFIG){
+  bootError("사이트 설정을 불러오지 못했습니다. 페이지를 새로고침해 주세요.");
+  throw new Error("RIFTBOUND_CONFIG missing");
+}
+
+const C = window.RIFTBOUND_CONFIG;
+const S = window.supabase.createClient(
+  C.SUPABASE_URL,
+  C.SUPABASE_ANON_KEY
+);
+
+let cards = [];
+let cart = {};
+
+const cardsEl = document.querySelector("#cards");
+const lastUpdatedEl = document.querySelector("#lastUpdated");
+const storeNameEl = document.querySelector("#storeName");
+const noticeEl = document.querySelector("#notice");
+const qEl = document.querySelector("#q");
+const rarityEl = document.querySelector("#rarity");
+const variantEl = document.querySelector("#variant");
+const finishEl = document.querySelector("#finish");
+const sortOrderEl = document.querySelector("#sortOrder");
+const cartSummaryEl = document.querySelector("#cartSummary");
+const copyBtnEl = document.querySelector("#copyBtn");
+const kakaoBtnEl = document.querySelector("#kakaoBtn");
+const cartViewBtnEl = document.querySelector("#cartViewBtn");
+const cartDrawerEl = document.querySelector("#cartDrawer");
+const cartCloseBtnEl = document.querySelector("#cartCloseBtn");
+const cartListEl = document.querySelector("#cartList");
+const drawerQtyEl = document.querySelector("#drawerQty");
+const drawerTotalEl = document.querySelector("#drawerTotal");
+const clearCartBtnEl = document.querySelector("#clearCartBtn");
+const drawerCopyBtnEl = document.querySelector("#drawerCopyBtn");
+const drawerKakaoBtnEl = document.querySelector("#drawerKakaoBtn");
+
+const won = n => "₩" + Number(n || 0).toLocaleString("ko-KR");
+const esc = s => String(s ?? "").replace(/[&<>"']/g, m => ({
+  "&":"&amp;",
+  "<":"&lt;",
+  ">":"&gt;",
+  '"':"&quot;",
+  "'":"&#39;"
+}[m]));
+
+
+
+function isSignature(c){
+  return String(c.variant||"").trim().toLowerCase()==="signature";
+}
+
+function isCUFoil(c){
+  const r=String(c.rarity||"").trim().toLowerCase();
+  const isCU=["common","uncommon","커먼","언커먼","c","u"].includes(r);
+  return isCU && String(c.finish||"").toUpperCase()==="FOIL";
+}
+
+function cardImageCandidates(c) {
+  const list = [];
+  if (c.image_url) list.push(c.image_url);
+
+  const cardNo = String(c.card_no || "");
+  const m = cardNo.match(/OGN-([0-9]{3}[a-z]?|[0-9]{3}\*)/i);
+
+  if (m) {
+    const raw = m[1].toLowerCase();
+
+    if (raw.endsWith("*")) {
+      const n = raw.replace("*", "");
+      list.push(`https://d3a8eduw4bm8.cloudfront.net/riftbound/cards/ogn/${n}-star-kr.webp`);
+      list.push(`https://d3a8eduw4bm8.cloudfront.net/riftbound/cards/ogn/${n}-signature-kr.webp`);
+      list.push(`https://d3a8eduw4bm8.cloudfront.net/riftbound/cards/ogn/${n}-kr.webp`);
+      list.push(`https://static.dotgg.gg/riftbound/cards/OGN-${n}-STAR.webp`);
+      list.push(`https://static.dotgg.gg/riftbound/cards/OGN-${n}.webp`);
+    } else {
+      list.push(`https://d3a8eduw4bm8.cloudfront.net/riftbound/cards/ogn/${raw}-kr.webp`);
+      list.push(`https://static.dotgg.gg/riftbound/cards/OGN-${raw.toUpperCase()}.webp`);
+    }
+  }
+
+  return [...new Set(list.filter(Boolean))];
+}
+
+function imageHtml(c) {
+  const urls = cardImageCandidates(c);
+  if (!urls.length) return '<div class="img"></div>';
+
+  const first = esc(urls[0]);
+  const rest = esc(JSON.stringify(urls.slice(1)));
+
+  return `<img class="img"
+    src="${first}"
+    data-fallbacks='${rest}'
+    loading="lazy"
+    alt="${esc(c.name_ko)}"
+    onerror="nextCardImage(this)">`;
+}
+
+function nextCardImage(img) {
+  try {
+    const fallbacks = JSON.parse(img.dataset.fallbacks || "[]");
+    if (!fallbacks.length) {
+      img.onerror = null;
+      img.style.visibility = "hidden";
+      return;
+    }
+    const next = fallbacks.shift();
+    img.dataset.fallbacks = JSON.stringify(fallbacks);
+    img.src = next;
+  } catch (e) {
+    img.onerror = null;
+    img.style.visibility = "hidden";
+  }
+}
+
+async function load() {
+  cardsEl.innerHTML='<div class="empty">카드 목록 불러오는 중...</div>';
+
+  try {
+    // 카드 목록은 상점설정과 완전히 분리해서 불러온다.
+    // 상점설정 조회가 실패해도 카드 목록은 정상 표시한다.
+    const cardRes = await S.from("public_cards")
+      .select("*")
+      .order("sort_no", { ascending: true });
+
+    if (cardRes.error) throw cardRes.error;
+
+    cards = cardRes.data || [];
+
+    buildFilters();
+    render();
+
+    // 설정은 부가정보이므로 실패해도 카드 화면 유지
+    try {
+      const settingRes = await S.from("public_shop_settings")
+        .select("*")
+        .eq("id", 1)
+        .maybeSingle();
+
+      if (!settingRes.error && settingRes.data) {
+        const set=settingRes.data;
+        storeNameEl.textContent=set.store_name||C.STORE_NAME;
+        noticeEl.textContent=set.notice||"";
+        if(set.kakao_openchat_url){
+          C.KAKAO_OPENCHAT_URL=set.kakao_openchat_url;
+        }
+      } else if(settingRes.error) {
+        console.warn("shop settings load failed:",settingRes.error);
+      }
+    } catch(settingErr){
+      console.warn("shop settings unavailable:",settingErr);
+    }
+
+  } catch (e) {
+    console.error("card load failed:",e);
+    cardsEl.innerHTML =
+      '<div class="empty">카드 목록을 불러오지 못했습니다.<br>' +
+      esc(e?.message || String(e)) +
+      '<br><button onclick="location.reload()" style="margin-top:8px;padding:8px 12px">다시 불러오기</button></div>';
+  }
+}
+
+function buildFilters() {
+  [...new Set(cards.map(x => x.rarity).filter(Boolean))]
+    .sort()
+    .forEach(x => rarityEl.insertAdjacentHTML(
+      "beforeend",
+      `<option>${esc(x)}</option>`
+    ));
+
+  [...new Set(cards.map(x => x.variant).filter(Boolean))]
+    .sort()
+    .forEach(x => variantEl.insertAdjacentHTML(
+      "beforeend",
+      `<option>${esc(x)}</option>`
+    ));
+}
+
+function filtered() {
+  const s = qEl.value.trim().toLowerCase();
+
+  const list = cards.filter(c =>
+    (!s || `${c.name_ko} ${c.card_no}`.toLowerCase().includes(s)) &&
+    (!rarityEl.value || c.rarity === rarityEl.value) &&
+    (!variantEl.value || c.variant === variantEl.value) &&
+    (!finishEl.value || c.finish === finishEl.value)
+  );
+
+  const mode = sortOrderEl?.value || "default";
+
+  if (mode === "price_desc") {
+    list.sort((a,b) =>
+      Number(b.sell_price||0) - Number(a.sell_price||0) ||
+      Number(a.sort_no||9999) - Number(b.sort_no||9999)
+    );
+  } else if (mode === "price_asc") {
+    list.sort((a,b) =>
+      Number(a.sell_price||0) - Number(b.sell_price||0) ||
+      Number(a.sort_no||9999) - Number(b.sort_no||9999)
+    );
+  } else if (mode === "card_no") {
+    list.sort((a,b) =>
+      String(a.card_no||"").localeCompare(String(b.card_no||""),"ko",{numeric:true})
+    );
+  } else {
+    list.sort((a,b) =>
+      Number(a.sort_no||9999) - Number(b.sort_no||9999)
+    );
+  }
+
+  return list;
+}
+
+
+function formatUpdatedAt(v){
+  if(!v) return "업데이트 기록 없음";
+  const d=new Date(v);
+  if(Number.isNaN(d.getTime())) return "업데이트 기록 없음";
+  const p=n=>String(n).padStart(2,"0");
+  return `${d.getFullYear()}.${p(d.getMonth()+1)}.${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+function updateLastUpdated(){
+  if(!lastUpdatedEl) return;
+  const latest=cards
+    .map(c=>c.updated_at)
+    .filter(Boolean)
+    .sort((a,b)=>new Date(b)-new Date(a))[0];
+  lastUpdatedEl.textContent=`최종 업데이트 ${formatUpdatedAt(latest)}`;
+}
+
+
+const isMany=c=>Boolean(c.stock_many);
+const availableQty=c=>isMany(c)?99:Math.max(0,Number(c.sell_qty||0));
+
+function render() {
+  const list = filtered();
+
+  cardsEl.innerHTML = list.length
+    ? list.map(c => {
+        const avail = availableQty(c);
+        const n = Math.min(cart[c.code] || 0, avail);
+
+        const soldout = !isMany(c) && Number(c.sell_qty||0) <= 0;
+        return `
+          <article class="card ${soldout ? "soldout" : ""}">
+            ${imageHtml(c)}
+            ${isCUFoil(c)?'<div class="foil-badge">FOIL</div>':""}
+            ${isSignature(c)?'<div class="signature-badge">SIGNATURE</div>':""}
+            ${soldout ? '<div class="soldout-overlay">품절</div>' : ''}
+            <div class="body">
+              <div class="name">${esc(c.name_ko)}</div>
+              <div class="meta">
+                ${esc(c.card_no)} ·
+                ${esc(c.rarity || "")} ·
+                ${esc(c.variant || "Standard")} ·
+                ${esc(c.finish)}
+              </div>
+              <div class="price">${c.sell_price > 0 ? won(c.sell_price) : "-"}</div>
+              ${
+                soldout
+                  ? '<div class="soldout-badge">품절</div>'
+                  : `<div class="stock">${isMany(c)?"재고많음":`판매가능 ${c.sell_qty}장`}</div>`
+              }
+
+              <div class="buyrow">
+                <button ${soldout ? "disabled" : ""} onclick="chg('${esc(c.code)}',-1)">−</button>
+                <div class="qty">${soldout ? 0 : n}</div>
+                <button ${soldout ? "disabled" : ""} onclick="chg('${esc(c.code)}',1)">＋</button>
+              </div>
+            </div>
+          </article>
+        `;
+      }).join("")
+    : '<div class="empty">조건에 맞는 판매 카드가 없습니다.</div>';
+
+  updateCart();
+}
+
+function chg(code, d) {
+  const c = cards.find(x => x.code === code);
+  if (!c) return;
+
+  cart[code] = Math.max(
+    0,
+    Math.min(availableQty(c), (cart[code] || 0) + d)
+  );
+
+  render();
+}
+
+function selected() {
+  return cards
+    .map(c => ({
+      ...c,
+      buy_qty: Math.min(cart[c.code] || 0, availableQty(c))
+    }))
+    .filter(c => c.buy_qty > 0);
+}
+
+function updateCart() {
+  const s = selected();
+  const qty = s.reduce((a, c) => a + c.buy_qty, 0);
+  const sum = s.reduce((a, c) => a + c.buy_qty * c.sell_price, 0);
+
+  cartSummaryEl.textContent = `선택 ${qty}장 · ${won(sum)}`;
+  if (cartViewBtnEl) cartViewBtnEl.textContent = `구매목록 보기 (${qty})`;
+  renderCartDrawer();
+}
+
+
+function openCartDrawer(){
+  renderCartDrawer();
+  if(cartDrawerEl){
+    cartDrawerEl.classList.add("open");
+    document.body.classList.add("cart-open");
+  }
+}
+function closeCartDrawer(){
+  if(cartDrawerEl){
+    cartDrawerEl.classList.remove("open");
+    document.body.classList.remove("cart-open");
+  }
+}
+
+function renderCartDrawer() {
+  const s = selected();
+  const qty = s.reduce((a, c) => a + c.buy_qty, 0);
+  const sum = s.reduce((a, c) => a + c.buy_qty * c.sell_price, 0);
+
+  drawerQtyEl.textContent = `총 ${qty}장`;
+  drawerTotalEl.textContent = won(sum);
+
+  if (!s.length) {
+    cartListEl.innerHTML = '<div class="cart-empty">아직 선택한 카드가 없습니다.</div>';
+    return;
+  }
+
+  cartListEl.innerHTML = s.map(c => {
+    const imgs = cardImageCandidates(c);
+    const thumb = imgs.length
+      ? `<img class="cart-thumb" src="${esc(imgs[0])}" loading="lazy">`
+      : '<div class="cart-thumb"></div>';
+
+    return `
+      <div class="cart-item" data-code="${esc(c.code)}">
+        ${thumb}
+        <div class="cart-info">
+          <div class="cart-name">${esc(c.name_ko)}</div>
+          <div class="cart-meta">${esc(c.card_no)} · ${esc(c.finish)}</div>
+          <div class="cart-price">${won(c.sell_price)} × ${c.buy_qty} = ${won(c.sell_price*c.buy_qty)}</div>
+        </div>
+        <div class="cart-actions">
+          <button class="drawer-minus">−</button>
+          <div class="cart-q">${c.buy_qty}</div>
+          <button class="drawer-plus">＋</button>
+          <button class="cart-remove">삭제</button>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+function orderText(orderId=null) {
+  const s = selected();
+  if (!s.length) return "";
+
+  const qty = s.reduce((a, c) => a + c.buy_qty, 0);
+  const sum = s.reduce(
+    (a, c) => a + c.buy_qty * c.sell_price,
+    0
+  );
+
+  return [
+    "[리프트바운드 오리진 구매 문의]",
+    ...(orderId ? [`문의번호 #${String(orderId).padStart(6,"0")}`] : []),
+    ...s.map(
+      c =>
+        `[${c.code}] ${c.card_no} ${c.name_ko} ${c.finish} × ${c.buy_qty} — ${won(c.sell_price * c.buy_qty)}`
+    ),
+    "",
+    `총 ${qty}장 / ${won(sum)}`
+  ].join("\n");
+}
+
+
+function pendingOrderItems(){
+  return selected().map(c=>({
+    code:c.code,
+    qty:Number(c.buy_qty||0),
+    unit_price:Number(c.sell_price||0),
+    line_total:Number(c.sell_price||0)*Number(c.buy_qty||0),
+    name_ko:c.name_ko||"",
+    card_no:c.card_no||"",
+    finish:c.finish||"",
+    stock_many:Boolean(c.stock_many)
+  }));
+}
+
+async function kakaoInquiry(){
+  const items=pendingOrderItems();
+  if(!items.length){
+    alert("카드를 선택해 주세요.");
+    return;
+  }
+  if(!C.KAKAO_OPENCHAT_URL || C.KAKAO_OPENCHAT_URL.includes("YOUR_LINK")){
+    alert("카카오 오픈채팅 주소가 아직 설정되지 않았습니다.");
+    return;
+  }
+
+  const totalQty=items.reduce((a,x)=>a+x.qty,0);
+  const totalAmount=items.reduce((a,x)=>a+x.line_total,0);
+
+  // 비동기 처리 뒤 팝업이 막히는 것을 줄이기 위해 먼저 빈 창을 연다.
+  const popup=window.open("about:blank","_blank");
+
+  try{
+    const {data,error}=await S.rpc("submit_pending_order",{
+      p_items:items,
+      p_total_qty:totalQty,
+      p_total_amount:totalAmount
+    });
+    if(error) throw error;
+
+    const orderId=Number(data);
+    const t=orderText(orderId);
+
+    try{
+      await navigator.clipboard.writeText(t);
+    }catch{
+      // 클립보드 권한이 막힌 경우 아래 prompt에서 직접 복사 가능
+      prompt("구매목록을 복사해 주세요.",t);
+    }
+
+    alert(`문의번호 #${String(orderId).padStart(6,"0")} 등록 완료\n구매목록을 복사했습니다.\n카카오톡에서 붙여넣어 보내주세요.`);
+
+    if(popup) popup.location.href=C.KAKAO_OPENCHAT_URL;
+    else window.location.href=C.KAKAO_OPENCHAT_URL;
+  }catch(err){
+    if(popup) popup.close();
+    alert("구매문의 등록 실패: "+(err?.message||err));
+  }
+}
+
+copyBtnEl.addEventListener("click", async () => {
+  const t = orderText();
+  if (!t) {
+    alert("카드를 선택해 주세요.");
+    return;
+  }
+
+  try {
+    await navigator.clipboard.writeText(t);
+    alert("구매목록을 복사했습니다.");
+  } catch {
+    prompt("아래 내용을 길게 눌러 복사해 주세요.", t);
+  }
+});
+
+kakaoBtnEl.addEventListener("click", kakaoInquiry);
+
+
+cartDrawerEl.addEventListener("click", e => {
+  if(e.target===cartDrawerEl)closeCartDrawer();
+});
+
+cartListEl.addEventListener("click", e => {
+  const item = e.target.closest(".cart-item");
+  if (!item) return;
+  const code = item.dataset.code;
+  const c = cards.find(x => x.code === code);
+  if (!c) return;
+
+  if (e.target.classList.contains("drawer-minus")) {
+    cart[code] = Math.max(0, (cart[code] || 0) - 1);
+  } else if (e.target.classList.contains("drawer-plus")) {
+    cart[code] = Math.min(availableQty(c), (cart[code] || 0) + 1);
+  } else if (e.target.classList.contains("cart-remove")) {
+    cart[code] = 0;
+  } else {
+    return;
+  }
+
+  render();
+  renderCartDrawer();
+});
+
+clearCartBtnEl.addEventListener("click", () => {
+  if (!selected().length) return;
+  if (!confirm("선택한 카드를 모두 비울까?")) return;
+  cart = {};
+  render();
+  renderCartDrawer();
+});
+
+drawerCopyBtnEl.addEventListener("click", async () => {
+  const t = orderText();
+  if (!t) {
+    alert("카드를 선택해 주세요.");
+    return;
+  }
+  try {
+    await navigator.clipboard.writeText(t);
+    alert("구매목록을 복사했습니다.");
+  } catch {
+    prompt("아래 내용을 길게 눌러 복사해 주세요.", t);
+  }
+});
+
+drawerKakaoBtnEl.addEventListener("click", kakaoInquiry);
+
+
+qEl.addEventListener("input", render);
+rarityEl.addEventListener("change", render);
+variantEl.addEventListener("change", render);
+finishEl.addEventListener("change", render);
+
+if(sortOrderEl) sortOrderEl.addEventListener("change",render);
+load();
+</script>
+</body>
+</html>
