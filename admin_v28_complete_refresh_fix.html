@@ -1,0 +1,1832 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>오리진 카드샵 관리자</title>
+<link rel="stylesheet" href="style.css">
+<style>
+:root{--bg:#f7f7f8;--panel:#fff;--text:#171717;--muted:#71717a;--line:#e7e7ea}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Noto Sans KR",sans-serif}
+.top{position:sticky;top:0;z-index:30;background:rgba(247,247,248,.97);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.head,.wrap{max-width:1150px;margin:auto;padding:8px}
+h1{font-size:17px;margin:0 0 5px}
+.hidden{display:none!important}
+.sub,.tiny{font-size:9px;color:var(--muted)}
+.panel,.card,.summary-box{background:#fff;border:1px solid var(--line);border-radius:10px}
+.panel{padding:8px;margin-bottom:8px}
+.topline{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:5px;align-items:center}
+.topline input,.topline button,.panel input,.panel select,.panel button{border:1px solid var(--line);background:#fff;border-radius:8px;padding:7px;font-size:11px;min-width:0}
+.total-chip{padding:7px 9px;background:#fff;border:1px solid var(--line);border-radius:8px;font-size:11px;font-weight:800;white-space:nowrap}
+.manage-panel{display:none;margin-top:6px}
+.manage-panel.open{display:block}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
+.controls-section{padding-top:6px;margin-top:6px;border-top:1px solid var(--line)}
+.controls-section:first-child{border-top:0;margin-top:0;padding-top:0}
+.view-switch{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.view-switch button.active{background:#111;color:#fff;border-color:#111}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
+.stat{background:#fafafa;border:1px solid var(--line);border-radius:8px;padding:6px}
+.stat b{display:block;font-size:12px}
+.stat span{font-size:8px;color:var(--muted)}
+.bulk{display:none;margin-top:5px}
+.bulk.open{display:block}
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.card{overflow:hidden}
+.card.dirty{outline:2px solid #f59e0b}
+.img{width:100%;aspect-ratio:5/7;object-fit:cover;background:#eee}
+.body{padding:7px}
+.name{font-size:12px;font-weight:750;line-height:1.25}
+.meta{font-size:9px;color:var(--muted);margin-top:2px}
+.price{font-size:14px;font-weight:800;margin-top:4px}
+.ctrl{display:grid;grid-template-columns:auto 1fr;gap:5px;align-items:center;margin-top:5px}
+.qty{display:grid;grid-template-columns:28px 1fr 28px;gap:3px}
+.qty input{text-align:center;width:100%}
+.edit{margin-top:4px}
+.edit input{width:100%}
+.value{font-size:9px;color:var(--muted);margin-top:4px}
+.list-wrap{display:none;background:#fff;border:1px solid var(--line);border-radius:10px;overflow:auto}
+.list-wrap.open{display:block}
+.list-table{width:100%;min-width:760px;border-collapse:collapse;font-size:10px}
+.list-table th,.list-table td{padding:4px 4px;border-bottom:1px solid #ececef;text-align:left;white-space:nowrap}
+.list-table th{position:sticky;top:0;background:#fafafa;z-index:2}
+.list-table tr.dirty{background:#fff8e6}
+.list-table input[type="number"]{width:70px;padding:5px}
+.list-table .listqty{display:grid;grid-template-columns:24px 46px 24px;gap:2px}
+.list-table .listqty input{text-align:center;width:46px}
+.list-name{max-width:190px;overflow:hidden;text-overflow:ellipsis}
+#cards.list-mode{display:none}
+@media(max-width:850px){
+  .cards{grid-template-columns:repeat(2,1fr)}
+  .topline{grid-template-columns:minmax(0,1fr) auto}
+  .total-chip{grid-column:1/-1;text-align:center}
+  .grid4{grid-template-columns:1fr 1fr}
+  .grid3{grid-template-columns:1fr 1fr}
+  .stats{grid-template-columns:1fr 1fr 1fr}
+}
+
+.foil-badge{
+  position:absolute;
+  top:7px;
+  left:7px;
+  z-index:4;
+  padding:4px 8px;
+  border-radius:7px;
+  color:#111;
+  font-size:10px;
+  font-weight:950;
+  letter-spacing:.08em;
+  border:1px solid rgba(255,255,255,.75);
+  background:
+    linear-gradient(115deg,
+      rgba(255,255,255,.95) 0%,
+      rgba(255,214,255,.95) 18%,
+      rgba(193,232,255,.95) 36%,
+      rgba(255,255,190,.95) 54%,
+      rgba(218,196,255,.95) 72%,
+      rgba(255,255,255,.95) 100%);
+  background-size:220% 220%;
+  box-shadow:0 1px 6px rgba(0,0,0,.28), inset 0 0 4px rgba(255,255,255,.9);
+  animation:foilShine 2.2s linear infinite;
+}
+@keyframes foilShine{
+  0%{background-position:0% 50%;filter:brightness(1)}
+  50%{background-position:100% 50%;filter:brightness(1.18)}
+  100%{background-position:0% 50%;filter:brightness(1)}
+}
+.card{position:relative}
+
+
+.list-table th:nth-child(1),.list-table td:nth-child(1){width:72px}
+.list-table th:nth-child(2),.list-table td:nth-child(2){width:auto;max-width:135px}
+.list-table th:nth-child(3),.list-table td:nth-child(3){width:52px}
+.list-table th:nth-child(4),.list-table td:nth-child(4){width:78px;text-align:center}
+.list-table th:nth-child(5),.list-table td:nth-child(5){width:98px}
+.list-table th:nth-child(6),.list-table td:nth-child(6){width:68px}
+.list-table th:nth-child(7),.list-table td:nth-child(7){width:74px}
+.list-table th:nth-child(8),.list-table td:nth-child(8){width:82px}
+.list-table button{padding:3px 4px}
+@media(max-width:850px){
+  .list-table{font-size:9px}
+  .list-name{max-width:105px}
+  .list-table th,.list-table td{padding:3px}
+}
+
+
+.card.missing{
+  opacity:.62;
+}
+.card.missing .img{
+  filter:brightness(.45) grayscale(.35);
+}
+.card.missing::after{
+  content:"미보유";
+  position:absolute;
+  top:42%;
+  left:50%;
+  transform:translate(-50%,-50%);
+  z-index:5;
+  padding:6px 11px;
+  border-radius:999px;
+  background:rgba(0,0,0,.72);
+  color:#fff;
+  font-size:10px;
+  font-weight:900;
+  letter-spacing:.08em;
+  pointer-events:none;
+}
+.list-table tr.missing{
+  opacity:.58;
+  background:#f3f3f4;
+}
+
+
+.qty-only{display:block;margin-top:5px}
+.qty-only .qty{
+  display:grid;
+  grid-template-columns:34px 1fr 34px;
+  gap:4px;
+  align-items:center;
+}
+.qty-only .qty button{
+  height:32px;
+  font-size:17px;
+  font-weight:800;
+}
+.qtynum{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  height:32px;
+  border:1px solid var(--line);
+  border-radius:7px;
+  background:#fafafa;
+  font-size:14px;
+  font-weight:900;
+  color:#111;
+}
+
+
+/* v13 mobile ultra-compact list */
+@media(max-width:850px){
+  .list-wrap{
+    overflow-x:hidden;
+  }
+  .list-table{
+    width:100%;
+    min-width:0!important;
+    table-layout:fixed!important;
+    font-size:8px!important;
+  }
+  .list-table th,
+  .list-table td{
+    padding:2px 2px!important;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+
+  /* 번호 */
+  .list-table th:nth-child(1),
+  .list-table td:nth-child(1){
+    width:50px!important;
+  }
+
+  /* 카드명 */
+  .list-table th:nth-child(2),
+  .list-table td:nth-child(2){
+    width:auto!important;
+    max-width:none!important;
+  }
+
+  /* 피니시 */
+  .list-table th:nth-child(3),
+  .list-table td:nth-child(3){
+    width:34px!important;
+    text-align:center;
+    font-size:7px!important;
+  }
+
+  /* 마지막 1장 판매 */
+  .list-table th:nth-child(4),
+  .list-table td:nth-child(4){
+    width:34px!important;
+    text-align:center;
+  }
+
+  /* 전체수량 */
+  .list-table th:nth-child(5),
+  .list-table td:nth-child(5){
+    width:70px!important;
+  }
+
+  /* 판매가 */
+  .list-table th:nth-child(6),
+  .list-table td:nth-child(6){
+    width:52px!important;
+  }
+
+  /* 북미가 / 보유가치는 모바일에서 숨김 */
+  .list-table th:nth-child(7),
+  .list-table td:nth-child(7),
+  .list-table th:nth-child(8),
+  .list-table td:nth-child(8){
+    display:none!important;
+  }
+
+  .list-table .listqty{
+    grid-template-columns:18px 30px 18px!important;
+    gap:1px!important;
+  }
+  .list-table .listqty button{
+    width:18px!important;
+    min-width:18px!important;
+    height:24px!important;
+    padding:0!important;
+    font-size:11px!important;
+  }
+  .list-table .listqty input{
+    width:30px!important;
+    height:24px!important;
+    padding:1px!important;
+    font-size:9px!important;
+  }
+
+  .list-table input.l-price{
+    width:48px!important;
+    height:24px!important;
+    padding:2px!important;
+    font-size:9px!important;
+  }
+
+  .list-table input[type="checkbox"]{
+    transform:scale(.85);
+    margin:0;
+  }
+
+  .list-name{
+    max-width:none!important;
+    font-size:8px!important;
+  }
+}
+
+
+.signature-badge{
+  position:absolute;
+  top:7px;
+  right:7px;
+  z-index:6;
+  padding:4px 8px;
+  border-radius:7px;
+  color:#3a2500;
+  font-size:9px;
+  font-weight:950;
+  letter-spacing:.06em;
+  border:1px solid rgba(255,245,180,.95);
+  background:
+    linear-gradient(115deg,
+      #fff7bf 0%,
+      #d9a928 18%,
+      #fff1a8 36%,
+      #b87b00 54%,
+      #ffe36d 72%,
+      #fff8d2 100%);
+  background-size:220% 220%;
+  box-shadow:0 1px 6px rgba(120,75,0,.35), inset 0 0 5px rgba(255,255,255,.8);
+  animation:signatureShine 2.4s linear infinite;
+}
+@keyframes signatureShine{
+  0%{background-position:0% 50%;filter:brightness(1)}
+  50%{background-position:100% 50%;filter:brightness(1.18)}
+  100%{background-position:0% 50%;filter:brightness(1)}
+}
+
+
+.qtynum[title="재고많음"]{
+  font-size:18px;
+  font-weight:950;
+  background:#eef7ff;
+  color:#1769aa;
+}
+
+
+.sales-panel{
+  margin-top:8px;
+  border:1px solid var(--line);
+  border-radius:10px;
+  background:#fff;
+  padding:10px;
+}
+.sales-panel textarea{
+  width:100%;
+  min-height:135px;
+  resize:vertical;
+  font-size:12px;
+  line-height:1.5;
+}
+.sales-actions{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:6px;
+  margin-top:6px;
+}
+.sale-preview{
+  margin-top:8px;
+  border:1px solid var(--line);
+  border-radius:8px;
+  overflow:hidden;
+}
+.sale-preview-row{
+  display:grid;
+  grid-template-columns:72px 1fr 42px 70px;
+  gap:5px;
+  align-items:center;
+  padding:6px 7px;
+  border-bottom:1px solid var(--line);
+  font-size:11px;
+}
+.sale-preview-row:last-child{border-bottom:0}
+.sale-preview-row.bad{background:#fff0f0;color:#9b1c1c}
+.sale-preview-row.many{background:#eef7ff}
+.sale-preview-summary{
+  padding:8px;
+  font-size:12px;
+  font-weight:800;
+  background:#f8fafc;
+}
+.sales-history{
+  margin-top:8px;
+  display:grid;
+  gap:6px;
+}
+.sale-history-item{
+  border:1px solid var(--line);
+  border-radius:8px;
+  padding:7px 8px;
+  font-size:11px;
+}
+.sale-history-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:6px;
+}
+.sale-history-head b{font-size:12px}
+.sale-history-meta{margin-top:3px;color:var(--muted)}
+.sale-history-items{
+  margin-top:5px;
+  white-space:pre-line;
+  line-height:1.45;
+}
+.undo-sale{
+  padding:5px 8px;
+  font-size:10px;
+}
+@media(max-width:850px){
+  .sales-panel{padding:8px}
+  .sales-panel textarea{min-height:120px;font-size:11px}
+  .sale-preview-row{
+    grid-template-columns:62px 1fr 34px 60px;
+    font-size:10px;
+    padding:5px;
+  }
+}
+
+
+.pending-orders{
+  display:grid;
+  gap:7px;
+  margin-top:8px;
+}
+.pending-order{
+  border:1px solid var(--line);
+  border-radius:9px;
+  padding:8px;
+  background:#fff;
+}
+.pending-order-head{
+  display:flex;
+  justify-content:space-between;
+  gap:8px;
+  align-items:flex-start;
+}
+.pending-order-title{
+  font-size:13px;
+  font-weight:950;
+}
+.pending-order-time{
+  font-size:10px;
+  color:var(--muted);
+  margin-top:2px;
+}
+.pending-order-items{
+  margin-top:6px;
+  padding:6px;
+  border-radius:7px;
+  background:#f8fafc;
+  font-size:10.5px;
+  line-height:1.45;
+  white-space:pre-line;
+}
+.pending-order-actions{
+  display:grid;
+  grid-template-columns:1fr 72px;
+  gap:6px;
+  margin-top:7px;
+}
+.pending-order-actions button{
+  min-height:34px;
+  font-size:11px;
+  font-weight:800;
+}
+.complete-order{
+  background:#111827;
+  color:#fff;
+}
+.delete-order{
+  background:#fff;
+  color:#9b1c1c;
+  border-color:#efcaca;
+}
+.order-warning{
+  color:#b45309;
+  font-weight:800;
+  margin-top:5px;
+  font-size:10px;
+}
+@media(max-width:850px){
+  .pending-order{padding:7px}
+  .pending-order-title{font-size:12px}
+  .pending-order-items{font-size:10px}
+  .pending-order-actions{grid-template-columns:1fr 64px}
+}
+
+
+.orders-modal{
+  position:fixed;
+  inset:0;
+  z-index:9999;
+  display:none;
+  background:rgba(15,23,42,.48);
+}
+.orders-modal.show{display:block}
+.orders-modal-sheet{
+  position:absolute;
+  inset:0;
+  display:flex;
+  flex-direction:column;
+  background:#f8fafc;
+}
+.orders-modal-head{
+  flex:0 0 auto;
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:10px;
+  padding:12px 14px;
+  background:#fff;
+  border-bottom:1px solid var(--line);
+  box-shadow:0 1px 5px rgba(0,0,0,.06);
+}
+.orders-modal-title{
+  font-size:17px;
+  font-weight:950;
+}
+.orders-modal-sub{
+  margin-top:2px;
+  font-size:10.5px;
+  color:var(--muted);
+}
+.orders-close{
+  min-width:64px;
+  min-height:34px;
+  font-weight:800;
+}
+.orders-modal-body{
+  flex:1 1 auto;
+  min-height:0;
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+  padding:10px 12px 80px;
+  overscroll-behavior:contain;
+}
+.orders-section-head{
+  position:sticky;
+  top:0;
+  z-index:3;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:8px;
+  padding:7px 2px;
+  background:#f8fafc;
+}
+.orders-refresh{
+  padding:5px 8px;
+  font-size:10px;
+}
+.completed-head{margin-top:12px}
+body.orders-open{overflow:hidden!important}
+@media(min-width:800px){
+  .orders-modal-sheet{
+    inset:5vh 8vw;
+    border-radius:14px;
+    overflow:hidden;
+    box-shadow:0 18px 50px rgba(0,0,0,.25);
+  }
+}
+
+
+.action-dialog{
+  position:fixed;
+  inset:0;
+  z-index:10050;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  padding:18px;
+  background:rgba(15,23,42,.55);
+}
+.action-dialog.show{display:flex}
+.action-dialog-card{
+  width:min(420px,100%);
+  border-radius:14px;
+  background:#fff;
+  box-shadow:0 20px 60px rgba(0,0,0,.30);
+  padding:16px;
+}
+.action-dialog-title{
+  font-size:16px;
+  font-weight:950;
+}
+.action-dialog-message{
+  margin-top:8px;
+  white-space:pre-line;
+  line-height:1.5;
+  font-size:13px;
+  color:#334155;
+}
+.action-dialog-actions{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+  margin-top:14px;
+}
+.action-dialog-actions button{
+  min-height:40px;
+  font-weight:900;
+}
+.action-dialog-cancel{
+  background:#fff;
+}
+.action-dialog-ok{
+  background:#111827;
+  color:#fff;
+}
+.action-status{
+  display:none;
+  margin:0 12px 8px;
+  padding:9px 10px;
+  border-radius:9px;
+  font-size:12px;
+  font-weight:800;
+  line-height:1.4;
+}
+.action-status.show{display:block}
+.action-status.ok{
+  background:#ecfdf5;
+  color:#065f46;
+  border:1px solid #a7f3d0;
+}
+.action-status.error{
+  background:#fef2f2;
+  color:#991b1b;
+  border:1px solid #fecaca;
+}
+
+
+.order-view-btn{
+  padding:6px 10px;
+  font-size:11px;
+  font-weight:900;
+}
+.order-detail{
+  display:none;
+  margin-top:8px;
+  padding-top:8px;
+  border-top:1px dashed var(--line);
+}
+.order-detail.open{display:block}
+.order-group{margin-top:8px}
+.order-group:first-child{margin-top:0}
+.order-group-title{
+  font-size:11px;
+  font-weight:900;
+  color:#334155;
+  margin-bottom:6px;
+  padding:4px 8px;
+  border-radius:999px;
+  background:#eef2f7;
+  display:inline-block;
+}
+.order-gallery{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(94px,1fr));
+  gap:8px;
+}
+.order-card{
+  border:1px solid var(--line);
+  border-radius:10px;
+  overflow:hidden;
+  background:#fff;
+}
+.order-card-imgwrap{
+  position:relative;
+  background:#f8fafc;
+}
+.order-card img{
+  display:block;
+  width:100%;
+  aspect-ratio: 63 / 88;
+  object-fit:cover;
+}
+.order-card-qty{
+  position:absolute;
+  right:6px;
+  bottom:6px;
+  min-width:24px;
+  height:24px;
+  border-radius:999px;
+  padding:0 6px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:rgba(15,23,42,.88);
+  color:#fff;
+  font-size:11px;
+  font-weight:900;
+}
+.order-card-body{padding:6px 7px 7px}
+.order-card-name{font-size:10.5px;font-weight:900;line-height:1.25;word-break:keep-all}
+.order-card-meta{margin-top:3px;font-size:9.5px;color:var(--muted);line-height:1.25}
+.order-card-empty{
+  aspect-ratio:63/88;
+  display:flex;align-items:center;justify-content:center;
+  color:#94a3b8;font-size:11px;font-weight:800;
+}
+.pending-order-actions{grid-template-columns:1fr 72px 72px;}
+@media(max-width:850px){
+  .pending-order-actions{grid-template-columns:1fr 60px 60px;}
+  .order-gallery{grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;}
+}
+
+
+.login-help-row{
+  display:flex;
+  justify-content:flex-end;
+  margin-top:5px;
+}
+.link-btn{
+  border:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  padding:4px 2px!important;
+  min-height:0!important;
+  font-size:11px!important;
+  font-weight:700;
+  color:#2563eb!important;
+  text-decoration:underline;
+  text-underline-offset:2px;
+}
+.reset-title{
+  font-size:14px;
+  font-weight:900;
+}
+.reset-desc{
+  margin:2px 0 7px;
+}
+#resetRequestMsg,
+#newPasswordMsg,
+#loginMsg{
+  margin-top:5px;
+  line-height:1.45;
+}
+
+
+.album-price-row{
+  display:grid;
+  grid-template-columns:auto 64px auto;
+  gap:5px;
+  align-items:center;
+  margin-top:5px;
+}
+.album-price-label{
+  font-size:10px;
+  font-weight:800;
+  color:var(--muted);
+}
+.album-price-input{
+  width:64px!important;
+  height:28px;
+  padding:2px 5px!important;
+  text-align:right;
+  font-size:11px!important;
+  font-weight:800;
+}
+.album-price-unit{
+  font-size:9px;
+  color:var(--muted);
+}
+
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="head">
+    <h1>오리진 카드샵 관리자</h1>
+
+    <div id="loginPanel" class="panel">
+      <div class="grid3">
+        <input id="email" type="email" placeholder="관리자 이메일">
+        <input id="password" type="password" placeholder="비밀번호">
+        <button id="loginBtn">로그인</button>
+      </div>
+      <div class="login-help-row">
+        <button id="forgotPasswordBtn" class="link-btn" type="button">비밀번호를 잊으셨나요?</button>
+      </div>
+      <div id="loginMsg" class="sub"></div>
+    </div>
+
+    <div id="resetRequestPanel" class="panel hidden">
+      <div class="reset-title">비밀번호 재설정</div>
+      <div class="sub reset-desc">관리자 이메일로 재설정 링크를 보냅니다.</div>
+      <div class="grid2">
+        <input id="resetEmail" type="email" placeholder="관리자 이메일">
+        <button id="sendResetBtn">재설정 메일 보내기</button>
+      </div>
+      <div class="login-help-row">
+        <button id="backToLoginBtn" class="link-btn" type="button">로그인으로 돌아가기</button>
+      </div>
+      <div id="resetRequestMsg" class="sub"></div>
+    </div>
+
+    <div id="newPasswordPanel" class="panel hidden">
+      <div class="reset-title">새 비밀번호 설정</div>
+      <div class="sub reset-desc">새 비밀번호를 두 번 입력해 주세요.</div>
+      <div class="grid2">
+        <input id="newPassword" type="password" autocomplete="new-password" placeholder="새 비밀번호">
+        <input id="newPasswordConfirm" type="password" autocomplete="new-password" placeholder="새 비밀번호 확인">
+      </div>
+      <button id="updatePasswordBtn" style="width:100%;margin-top:6px">새 비밀번호 저장</button>
+      <div id="newPasswordMsg" class="sub"></div>
+    </div>
+
+    <div id="adminTop" class="hidden">
+      <div class="topline">
+        <input id="q" placeholder="카드명 / 번호 검색">
+        <button id="manageToggle"
+onclick="const p=document.getElementById('managePanel');const opening=!p.classList.contains('open');p.classList.toggle('open',opening);p.classList.toggle('hidden',!opening);this.textContent=opening?'관리 메뉴 닫기':'관리 메뉴 열기';return false;">
+관리 메뉴 열기
+</button>
+        <div class="total-chip">총 보유가치 <span id="totalValueTop">₩0</span></div>
+      </div>
+
+      <div id="managePanel" class="manage-panel panel hidden">
+        <div class="controls-section">
+          <div class="view-switch">
+            <button id="albumViewBtn" class="active">앨범보기</button>
+            <button id="listViewBtn">목록보기</button>
+          </div>
+        </div>
+
+        <div class="controls-section grid3">
+          <select id="rarity"><option value="">전체 레어도</option></select>
+          <select id="own">
+            <option value="">전체</option>
+            <option value="owned">보유중</option>
+            <option value="missing">미보유</option>
+            <option value="sellable">판매가능</option>
+            <option value="hidden">판매불가</option>
+          </select>
+          <select id="variant">
+            <option value="">전체 유형</option>
+            <option>Standard</option>
+            <option>Alt Art</option>
+            <option>Overnumber</option>
+            <option>KR Overnumber</option>
+            <option>Signature</option>
+          </select>
+          <select id="finish">
+            <option value="">전체 피니시</option>
+            <option>NORMAL</option>
+            <option>FOIL</option>
+          </select>
+          <select id="sort">
+            <option value="number">번호순</option>
+            <option value="priceDesc">가격 높은순</option>
+            <option value="priceAsc">가격 낮은순</option>
+            <option value="name">이름순</option>
+          </select>
+          <div style="display:flex;align-items:center;gap:4px">
+            <span class="sub">환율</span>
+            <input id="fx" type="number" min="500" step="10" style="width:100%" value="1400">
+          </div>
+        </div>
+
+        <div class="controls-section sub" style="line-height:1.5">
+수량은 <b>전체 보유수량</b> 기준. 기본상태에서는 1장을 보관하고 <b>2장째부터 자동 판매</b>돼. <b>마지막 1장도 판매</b>를 체크하면 보유수량 전부 판매페이지에 노출돼.
+</div>
+<div class="controls-section stats">
+          <div class="stat"><b id="sOwned">0</b><span>보유 카드종</span></div>
+          <div class="stat"><b id="sSaleQty">0</b><span>판매가능 수량</span></div>
+          <div class="stat"><b id="sSaleVal">₩0</b><span>판매재고 가치</span></div>
+          <div class="stat"><b id="sFiltered">0</b><span>필터 카드</span></div>
+          <div class="stat"><b id="sFilteredVal">₩0</b><span>필터 보유가치</span></div>
+          <div class="stat"><b id="autosaveStatus">자동 저장 ON</b><span>저장상태</span></div>
+        </div>
+
+        <div class="controls-section grid4">
+          <button id="exportBtn">현재 필터 CSV</button>
+          <button id="bulkToggle">필터 일괄가격</button>
+          <button id="saveBtn">수동 저장</button>
+          <button id="logoutBtn">로그아웃</button>
+        </div>
+
+        <div class="controls-section">
+          <div class="grid2">
+            <button id="manyApply">현재 필터 C/U → 재고많음(-)</button>
+            <button id="manyClear">현재 필터 C/U → 재고많음 해제</button>
+          </div>
+          <div class="sub" style="margin-top:4px">커먼/언커먼만 적용됩니다. 수량칸에 직접 <b>-</b>를 입력해도 재고많음으로 저장됩니다.</div>
+        </div>
+
+        <div class="controls-section">
+  <button id="openOrdersBtn" style="width:100%;font-weight:900;min-height:42px">
+    구매목록 열기
+  </button>
+</div>
+
+<div id="bulk" class="bulk controls-section">
+          <div class="grid2">
+            <select id="bulkCond">
+              <option value="equal">현재가가 정확히</option>
+              <option value="lte">현재가 이하</option>
+              <option value="gte">현재가 이상</option>
+              <option value="range">현재가 범위</option>
+              <option value="all">현재가 무관</option>
+            </select>
+            <select id="bulkFin">
+              <option value="visible">현재 피니시 필터 기준</option>
+              <option value="NORMAL">NORMAL만</option>
+              <option value="FOIL">FOIL만</option>
+              <option value="both">둘 다</option>
+            </select>
+          </div>
+          <div class="grid2" style="margin-top:4px">
+            <input id="bulkFrom" type="number" step=".1" placeholder="현재가 (1=100원)">
+            <input id="bulkTo" type="number" step=".1" placeholder="변경가 (1=100원)">
+          </div>
+          <div id="rangeRow" class="grid2" style="display:none;margin-top:4px">
+            <input id="bulkMin" type="number" step=".1" placeholder="범위 최소">
+            <input id="bulkMax" type="number" step=".1" placeholder="범위 최대">
+          </div>
+          <div class="grid3" style="margin-top:4px">
+            <div id="bulkStatus" class="sub">현재 필터에만 적용</div>
+            <button id="bulkApply">적용</button>
+            <button id="bulkUndo">복원</button>
+          </div>
+        </div>
+
+        <div class="controls-section">
+          <div class="grid3">
+            <input id="kakao" placeholder="카카오톡 오픈채팅 URL">
+            <input id="store" placeholder="판매페이지 이름">
+            <button id="saveSettings">설정 저장</button>
+          </div>
+          <input id="notice" style="width:100%;margin-top:4px" placeholder="판매페이지 안내문">
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div id="cards" class="cards"></div>
+  <div id="listWrap" class="list-wrap">
+    <table class="list-table">
+      <thead><tr>
+        <th>번호</th><th>카드명</th><th>피니시</th><th>마지막 1장 판매</th>
+        <th>전체수량</th><th>판매가</th><th>북미가</th><th>보유가치</th>
+      </tr></thead>
+      <tbody id="listBody"></tbody>
+    </table>
+  </div>
+  <div style="height:80px"></div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js?v=20261003-2"></script>
+<div id="ordersModal" class="orders-modal" aria-hidden="true">
+  <div class="orders-modal-sheet">
+    <div class="orders-modal-head">
+      <div>
+        <div class="orders-modal-title">구매목록</div>
+        <div class="orders-modal-sub">카카오 문의로 등록된 주문을 확인하고 처리합니다. · v28</div>
+      </div>
+      <button id="closeOrdersBtn" class="orders-close">닫기</button>
+    </div>
+
+    <div class="orders-modal-body">
+      <div class="orders-section-head">
+        <b>대기 주문</b>
+        <button id="refreshOrdersBtn" class="orders-refresh">새로고침</button>
+      </div>
+
+      <div id="pendingOrders" class="pending-orders">
+        <div class="sub">주문을 불러오는 중...</div>
+      </div>
+
+      <div class="orders-section-head completed-head">
+        <b>최근 완료 주문</b>
+      </div>
+
+      <div id="completedOrders" class="sales-history">
+        <div class="sub">완료 주문을 불러오는 중...</div>
+      </div>
+    </div>
+
+    <div id="orderActionStatus" class="action-status" role="status" aria-live="polite"></div>
+  </div>
+</div>
+
+<div id="actionDialog" class="action-dialog" aria-hidden="true">
+  <div class="action-dialog-card" role="dialog" aria-modal="true" aria-labelledby="actionDialogTitle">
+    <div id="actionDialogTitle" class="action-dialog-title">확인</div>
+    <div id="actionDialogMessage" class="action-dialog-message"></div>
+    <div class="action-dialog-actions">
+      <button id="actionDialogCancel" class="action-dialog-cancel">취소</button>
+      <button id="actionDialogOk" class="action-dialog-ok">확인</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const C=window.RIFTBOUND_CONFIG;
+const S=window.supabase.createClient(C.SUPABASE_URL,C.SUPABASE_ANON_KEY);
+
+let cards=[],original={},dirty=new Set();
+let viewMode=localStorage.getItem("riftbound_admin_view")||"album";
+let fx=Number(localStorage.getItem("riftbound_admin_fx")||1400);
+let autosaveTimer=null;
+
+const BASE_FX=1400;
+const $=s=>document.querySelector(s);
+const won=n=>"₩"+Math.round(Number(n||0)).toLocaleString("ko-KR");
+const esc=s=>String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
+const u2k=v=>Math.max(0,Math.round(Number(v||0)*100));
+const k2u=v=>Number(v||0)?Number(v)/100:"";
+const naKrw=c=>Math.round(Number(c.north_america_price||0)*(fx/BASE_FX));
+const isMany=c=>Boolean(c.stock_many);
+const isCU=c=>["common","uncommon","커먼","언커먼","c","u"].includes(String(c.rarity||"").trim().toLowerCase());
+const cv=c=>isMany(c)?0:Number(c.total_qty||0)*Number(c.sell_price||0);
+const saleQty=c=>isMany(c)?0:(c.sale_enabled?Math.max(0,Number(c.total_qty||0)):Math.max(0,Number(c.total_qty||0)-1));
+const isSellable=c=>isMany(c)||saleQty(c)>0;
+const sv=c=>saleQty(c)*Number(c.sell_price||0);
+
+
+function isSignature(c){
+  return String(c.variant||"").trim().toLowerCase()==="signature";
+}
+
+function isCUFoil(c){
+  return isCU(c) && String(c.finish||"").toUpperCase()==="FOIL";
+}
+function imgs(c){
+  let a=[];
+  if(c.image_url)a.push(c.image_url);
+  const m=String(c.card_no||"").match(/OGN-([0-9]{3}[a-z]?|[0-9]{3}\*)/i);
+  if(m){
+    let r=m[1].toLowerCase();
+    if(r.endsWith("*")){
+      let n=r.replace("*","");
+      a.push(
+        `https://d3a8eduw4bm8.cloudfront.net/riftbound/cards/ogn/${n}-star-kr.webp`,
+        `https://d3a8eduw4bm8.cloudfront.net/riftbound/cards/ogn/${n}-signature-kr.webp`,
+        `https://d3a8eduw4bm8.cloudfront.net/riftbound/cards/ogn/${n}-kr.webp`
+      );
+    }else{
+      a.push(`https://d3a8eduw4bm8.cloudfront.net/riftbound/cards/ogn/${r}-kr.webp`);
+    }
+  }
+  return [...new Set(a)];
+}
+function ni(i){
+  try{
+    let a=JSON.parse(i.dataset.f||"[]");
+    if(!a.length){i.onerror=null;i.style.visibility="hidden";return}
+    i.src=a.shift();i.dataset.f=JSON.stringify(a);
+  }catch{i.style.visibility="hidden"}
+}
+function ih(c){
+  let a=imgs(c);
+  return a.length?`<img class="img" src="${esc(a[0])}" data-f='${esc(JSON.stringify(a.slice(1)))}' onerror="ni(this)" loading="lazy">`:'<div class="img"></div>';
+}
+
+let passwordRecoveryMode=false;
+
+function adminRedirectUrl(){
+  // 현재 열려있는 admin.html 주소로 돌아오게 함.
+  // GitHub Pages의 /riftbound-shop/ 경로도 그대로 유지됨.
+  return `${location.origin}${location.pathname}`;
+}
+
+function hideAuthPanels(){
+  $("#loginPanel").classList.add("hidden");
+  $("#resetRequestPanel").classList.add("hidden");
+  $("#newPasswordPanel").classList.add("hidden");
+}
+
+function showLogin(message=""){
+  passwordRecoveryMode=false;
+  hideAuthPanels();
+  $("#loginPanel").classList.remove("hidden");
+  $("#adminTop").classList.add("hidden");
+  if(message)$("#loginMsg").textContent=message;
+}
+
+function showResetRequest(){
+  hideAuthPanels();
+  $("#resetRequestPanel").classList.remove("hidden");
+  $("#adminTop").classList.add("hidden");
+  const current=$("#email").value.trim();
+  if(current)$("#resetEmail").value=current;
+  $("#resetRequestMsg").textContent="";
+}
+
+function showNewPassword(){
+  passwordRecoveryMode=true;
+  hideAuthPanels();
+  $("#newPasswordPanel").classList.remove("hidden");
+  $("#adminTop").classList.add("hidden");
+  $("#newPasswordMsg").textContent="재설정 링크가 확인됐습니다. 새 비밀번호를 입력해 주세요.";
+}
+
+async function check(){
+  const {data:{session}}=await S.auth.getSession();
+  if(passwordRecoveryMode)return showNewPassword();
+  session?show():showLogin();
+}
+
+function hide(){
+  showLogin();
+}
+
+async function show(){
+  if(passwordRecoveryMode)return showNewPassword();
+  hideAuthPanels();
+  $("#adminTop").classList.remove("hidden");
+  $("#fx").value=fx;
+  await Promise.all([loadCards(),loadSettings()]);
+}
+
+$("#loginBtn").onclick=async()=>{
+  const email=$("#email").value.trim();
+  const password=$("#password").value;
+  if(!email||!password){
+    $("#loginMsg").textContent="이메일과 비밀번호를 입력해 주세요.";
+    return;
+  }
+  $("#loginMsg").textContent="로그인 중...";
+  const {error}=await S.auth.signInWithPassword({email,password});
+  $("#loginMsg").textContent=error?error.message:"로그인 완료";
+  if(!error)show();
+};
+
+$("#forgotPasswordBtn").onclick=showResetRequest;
+$("#backToLoginBtn").onclick=()=>showLogin();
+
+$("#sendResetBtn").onclick=async()=>{
+  const email=$("#resetEmail").value.trim();
+  if(!email){
+    $("#resetRequestMsg").textContent="관리자 이메일을 입력해 주세요.";
+    return;
+  }
+
+  const btn=$("#sendResetBtn");
+  btn.disabled=true;
+  btn.textContent="발송중...";
+  $("#resetRequestMsg").textContent="";
+
+  const {error}=await S.auth.resetPasswordForEmail(email,{
+    redirectTo:adminRedirectUrl()
+  });
+
+  btn.disabled=false;
+  btn.textContent="재설정 메일 보내기";
+
+  if(error){
+    $("#resetRequestMsg").textContent="발송 실패: "+error.message;
+    return;
+  }
+
+  $("#resetRequestMsg").textContent=
+    "재설정 메일을 보냈습니다. 가장 최근에 받은 메일의 링크를 눌러 주세요.";
+};
+
+$("#updatePasswordBtn").onclick=async()=>{
+  const p1=$("#newPassword").value;
+  const p2=$("#newPasswordConfirm").value;
+
+  if(p1.length<6){
+    $("#newPasswordMsg").textContent="새 비밀번호는 최소 6자 이상으로 입력해 주세요.";
+    return;
+  }
+  if(p1!==p2){
+    $("#newPasswordMsg").textContent="두 비밀번호가 서로 다릅니다.";
+    return;
+  }
+
+  const btn=$("#updatePasswordBtn");
+  btn.disabled=true;
+  btn.textContent="변경중...";
+  $("#newPasswordMsg").textContent="";
+
+  const {error}=await S.auth.updateUser({password:p1});
+
+  btn.disabled=false;
+  btn.textContent="새 비밀번호 저장";
+
+  if(error){
+    $("#newPasswordMsg").textContent="변경 실패: "+error.message;
+    return;
+  }
+
+  await S.auth.signOut();
+  passwordRecoveryMode=false;
+
+  // recovery token/hash/code를 주소창에서 정리
+  history.replaceState({},document.title,adminRedirectUrl());
+
+  $("#password").value="";
+  $("#newPassword").value="";
+  $("#newPasswordConfirm").value="";
+  showLogin("비밀번호 변경 완료. 새 비밀번호로 로그인해 주세요.");
+};
+
+$("#logoutBtn").onclick=async()=>{
+  await S.auth.signOut();
+  showLogin();
+};
+
+// Supabase가 비밀번호 재설정 링크를 처리하면 이 이벤트가 발생함.
+S.auth.onAuthStateChange((event,session)=>{
+  if(event==="PASSWORD_RECOVERY"){
+    passwordRecoveryMode=true;
+    setTimeout(showNewPassword,0);
+  }else if(event==="SIGNED_OUT"){
+    if(!passwordRecoveryMode)setTimeout(()=>showLogin(),0);
+  }
+});
+
+async function loadCards(){
+  const {data,error}=await S.from("cards").select("*").order("sort_no",{ascending:true});
+  if(error)return alert(error.message);
+  cards=(data||[]).map(x=>({...x,total_qty:Number(x.total_qty ?? Number(x.sell_qty||0)),sale_enabled:Boolean(x.sale_enabled ?? (Number(x.sell_qty||0)>0)),stock_many:Boolean(x.stock_many)}));
+  original=Object.fromEntries(cards.map(c=>[c.code,JSON.parse(JSON.stringify(c))]));
+  dirty.clear();
+  buildRarity();
+  render();
+}
+async function loadSettings(){
+  const {data}=await S.from("shop_settings").select("*").eq("id",1).maybeSingle();
+  if(data){
+    $("#kakao").value=data.kakao_openchat_url||"";
+    $("#store").value=data.store_name||"";
+    $("#notice").value=data.notice||"";
+  }
+}
+$("#saveSettings").onclick=async()=>{
+  const {error}=await S.from("shop_settings").upsert({
+    id:1,
+    kakao_openchat_url:$("#kakao").value.trim(),
+    store_name:$("#store").value.trim()||"리프트바운드 오리진 카드샵",
+    notice:$("#notice").value.trim(),
+    updated_at:new Date().toISOString()
+  },{onConflict:"id"});
+  alert(error?error.message:"설정 저장 완료");
+};
+
+function buildRarity(){
+  const s=$("#rarity"),cur=s.value;
+  s.innerHTML='<option value="">전체 레어도</option>';
+  [...new Set(cards.map(c=>c.rarity).filter(Boolean))].sort().forEach(x=>s.insertAdjacentHTML("beforeend",`<option>${esc(x)}</option>`));
+  s.value=cur;
+}
+function filtered(){
+  const q=$("#q").value.trim().toLowerCase(),r=$("#rarity").value,o=$("#own").value,v=$("#variant").value,f=$("#finish").value;
+  let a=cards.filter(c=>{
+    if(q&&!(`${c.name_ko} ${c.card_no}`.toLowerCase().includes(q)))return false;
+    if(r&&c.rarity!==r)return false;
+    if(o==="owned"&&!isMany(c)&&Number(c.total_qty||0)<1)return false;
+    if(o==="missing"&&(isMany(c)||Number(c.total_qty||0)>0))return false;
+    if(o==="sellable"&&!isSellable(c))return false;
+    if(o==="hidden"&&isSellable(c))return false;
+    if(v&&c.variant!==v)return false;
+    if(f&&c.finish!==f)return false;
+    return true;
+  });
+  const s=$("#sort").value;
+  if(s==="priceDesc")a.sort((x,y)=>Number(y.sell_price)-Number(x.sell_price));
+  else if(s==="priceAsc")a.sort((x,y)=>Number(x.sell_price)-Number(y.sell_price));
+  else if(s==="name")a.sort((x,y)=>String(x.name_ko).localeCompare(String(y.name_ko),"ko"));
+  else a.sort((x,y)=>Number(x.sort_no||9999)-Number(y.sort_no||9999));
+  return a;
+}
+function stats(a){
+  const total=cards.reduce((x,c)=>x+cv(c),0);
+  const manyAll=cards.filter(isMany).length;
+  const manyFiltered=a.filter(isMany).length;
+  $("#totalValueTop").textContent=won(total)+(manyAll?` + 대량 ${manyAll}종`:"");
+  $("#sOwned").textContent=cards.filter(c=>isMany(c)||Number(c.total_qty||0)>0).length.toLocaleString();
+  $("#sSaleQty").textContent=cards.reduce((x,c)=>x+saleQty(c),0).toLocaleString()+(manyAll?` + 대량 ${manyAll}종`:"");
+  $("#sSaleVal").textContent=won(cards.reduce((x,c)=>x+sv(c),0))+(manyAll?" + 대량재고":"");
+  $("#sFiltered").textContent=a.length.toLocaleString();
+  $("#sFilteredVal").textContent=won(a.reduce((x,c)=>x+cv(c),0))+(manyFiltered?` + 대량 ${manyFiltered}종`:"");
+}
+function render(){
+  const a=filtered();
+  stats(a);
+
+  $("#cards").innerHTML=a.length?a.map(c=>`
+    <article class="card ${dirty.has(c.code)?"dirty":""} ${(!isMany(c)&&Number(c.total_qty||0)<1)?"missing":""}" data-code="${esc(c.code)}">
+      ${ih(c)}
+      ${isCUFoil(c)?'<div class="foil-badge">FOIL</div>':""}
+      ${isSignature(c)?'<div class="signature-badge">SIGNATURE</div>':""}
+      <div class="body">
+        <div class="name">${esc(c.name_ko)}</div>
+        <div class="meta">${esc(c.card_no)} · ${esc(c.rarity||"")} · ${esc(c.variant||"Standard")} · ${esc(c.finish)}</div>
+        <div class="price">${won(c.sell_price)} <span class="tiny">(북미 ${won(naKrw(c))})</span></div>
+        <div class="ctrl qty-only">
+          <div class="qty">
+            <button class="minus" ${isMany(c)?"disabled":""}>−</button>
+            <span class="qtynum" title="${isMany(c)?"재고많음":"전체 보유수량"}">${isMany(c)?"-":Number(c.total_qty||0)}</span>
+            <button class="plus" ${isMany(c)?"disabled":""}>＋</button>
+          </div>
+        </div>
+        <div class="edit"><input class="pricei" type="number" step=".1" min="0" value="${k2u(c.sell_price)}" placeholder="판매가 1=100원"></div>
+        <div class="album-price-row">
+          <span class="album-price-label">판매가</span>
+          <input class="pricei album-price-input" type="number" min="0" step="1" value="${k2u(c.sell_price)}" title="1 = 100원">
+          <span class="album-price-unit">×100원</span>
+        </div>
+        <div class="value">${isMany(c)?"전체 - · 판매가능 재고많음 · 보유가치 -":`전체 ${Number(c.total_qty||0)}장 · 판매가능 ${saleQty(c)}장 · 보유가치 ${won(cv(c))}`}</div>
+      </div>
+    </article>`).join(""):'<div class="panel">조건에 맞는 카드가 없어.</div>';
+
+  $("#listBody").innerHTML=a.length?a.map(c=>`
+    <tr class="${dirty.has(c.code)?"dirty":""} ${(!isMany(c)&&Number(c.total_qty||0)<1)?"missing":""}" data-code="${esc(c.code)}">
+      <td>${esc(c.card_no)}</td>
+      <td class="list-name">${esc(c.name_ko)}</td>
+      <td>${esc(c.finish)}</td>
+      <td><input class="l-sale" type="checkbox" ${c.sale_enabled?"checked":""}></td>
+      <td>
+        <div class="listqty">
+          <button class="l-minus">−</button>
+          <input class="l-qty" type="text" inputmode="numeric" value="${isMany(c)?"-":Number(c.total_qty||0)}" title="'-' 입력 시 재고많음">
+          <button class="l-plus">＋</button>
+        </div>
+      </td>
+      <td><input class="l-price" type="number" step=".1" min="0" value="${k2u(c.sell_price)}"></td>
+      <td>${won(naKrw(c))}</td>
+      <td>${won(cv(c))}</td>
+    </tr>`).join(""):'<tr><td colspan="8">조건에 맞는 카드가 없어.</td></tr>';
+
+  applyViewMode();
+}
+function applyViewMode(){
+  const list=viewMode==="list";
+  $("#cards").classList.toggle("list-mode",list);
+  $("#listWrap").classList.toggle("open",list);
+  $("#albumViewBtn").classList.toggle("active",!list);
+  $("#listViewBtn").classList.toggle("active",list);
+}
+
+function payload(c){
+  return {
+    code:c.code,card_no:c.card_no,name_ko:c.name_ko,rarity:c.rarity,variant:c.variant,finish:c.finish,
+    image_url:c.image_url||"",total_qty:Number(c.total_qty||0),sell_qty:saleQty(c),sell_price:Number(c.sell_price||0),
+    north_america_price:Number(c.north_america_price||0),binder_owned:!!c.binder_owned,
+    sale_enabled:!!c.sale_enabled,stock_many:!!c.stock_many,
+    sort_no:Number(c.sort_no||9999),updated_at:new Date().toISOString()
+  };
+}
+async function saveCodes(codes,silent=true){
+  const rows=cards.filter(c=>codes.includes(c.code)).map(payload);
+  if(!rows.length)return true;
+  $("#autosaveStatus").textContent="저장중…";
+  const {error}=await S.from("cards").upsert(rows,{onConflict:"code"});
+  if(error){
+    $("#autosaveStatus").textContent="저장 실패";
+    if(!silent)alert(error.message);
+    return false;
+  }
+  rows.forEach(r=>{
+    dirty.delete(r.code);
+    const c=cards.find(x=>x.code===r.code);
+    if(c)original[r.code]=JSON.parse(JSON.stringify(c));
+  });
+  $("#autosaveStatus").textContent="저장완료";
+  render();
+  return true;
+}
+function queueSave(code,delay=400){
+  dirty.add(code);
+  $("#autosaveStatus").textContent="저장 대기";
+  clearTimeout(autosaveTimer);
+  autosaveTimer=setTimeout(()=>saveCodes([...dirty],true),delay);
+}
+
+function updateCardFromAlbum(e){
+  const art=e.target.closest(".card");if(!art)return;
+  const c=cards.find(x=>x.code===art.dataset.code);if(!c)return;
+  if(e.target.classList.contains("pricei"))c.sell_price=u2k(e.target.value);
+  else return;
+  queueSave(c.code,400);render();
+}
+$("#cards").addEventListener("change",updateCardFromAlbum);
+$("#cards").addEventListener("click",e=>{
+  const art=e.target.closest(".card");if(!art)return;
+  const c=cards.find(x=>x.code===art.dataset.code);if(!c)return;
+  if(isMany(c))return;
+  if(e.target.classList.contains("minus"))c.total_qty=Math.max(0,Number(c.total_qty||0)-1);
+  else if(e.target.classList.contains("plus"))c.total_qty=Number(c.total_qty||0)+1;
+  else return;
+  queueSave(c.code,50);render();
+});
+
+function updateCardFromList(e){
+  const tr=e.target.closest("tr[data-code]");if(!tr)return;
+  const c=cards.find(x=>x.code===tr.dataset.code);if(!c)return;
+  if(e.target.classList.contains("l-sale"))c.sale_enabled=e.target.checked;
+  else if(e.target.classList.contains("l-qty")){
+    const v=String(e.target.value||"").trim();
+    if(v==="-"){c.stock_many=true;}
+    else{c.stock_many=false;c.total_qty=Math.max(0,Number(v||0));}
+  }
+  else if(e.target.classList.contains("l-price"))c.sell_price=u2k(e.target.value);
+  else return;
+  queueSave(c.code,400);render();
+}
+$("#listBody").addEventListener("change",updateCardFromList);
+$("#listBody").addEventListener("input",e=>{
+  if(e.target.classList.contains("l-price")||e.target.classList.contains("l-qty")){
+    const tr=e.target.closest("tr[data-code]");if(!tr)return;
+    const c=cards.find(x=>x.code===tr.dataset.code);if(!c)return;
+    if(e.target.classList.contains("l-price"))c.sell_price=u2k(e.target.value);
+    if(e.target.classList.contains("l-qty")){
+      const v=String(e.target.value||"").trim();
+      if(v==="-"){c.stock_many=true;}
+      else if(/^\d+$/.test(v)){c.stock_many=false;c.total_qty=Math.max(0,Number(v));}
+    }
+    dirty.add(c.code);
+    $("#autosaveStatus").textContent="저장 대기";
+    clearTimeout(autosaveTimer);
+    autosaveTimer=setTimeout(()=>saveCodes([...dirty],true),600);
+    stats(filtered());
+  }
+});
+$("#listBody").addEventListener("click",e=>{
+  const tr=e.target.closest("tr[data-code]");if(!tr)return;
+  const c=cards.find(x=>x.code===tr.dataset.code);if(!c)return;
+  if(isMany(c))return;
+  if(e.target.classList.contains("l-minus"))c.total_qty=Math.max(0,Number(c.total_qty||0)-1);
+  else if(e.target.classList.contains("l-plus"))c.total_qty=Number(c.total_qty||0)+1;
+  else return;
+  queueSave(c.code,50);render();
+});
+
+
+$("#manyApply").onclick=async()=>{
+  const targets=filtered().filter(isCU);
+  if(!targets.length)return alert("현재 필터에 커먼/언커먼 카드가 없어.");
+  if(!confirm(`현재 필터의 커먼/언커먼 ${targets.length}종을 재고많음(-)으로 변경할까?`))return;
+  targets.forEach(c=>{c.stock_many=true;dirty.add(c.code);});
+  render();
+  await saveCodes(targets.map(c=>c.code),false);
+};
+$("#manyClear").onclick=async()=>{
+  const targets=filtered().filter(c=>isCU(c)&&isMany(c));
+  if(!targets.length)return alert("현재 필터에 재고많음 상태의 커먼/언커먼이 없어.");
+  if(!confirm(`현재 필터의 재고많음 ${targets.length}종을 해제할까? 기존 숫자 수량으로 돌아갑니다.`))return;
+  targets.forEach(c=>{c.stock_many=false;dirty.add(c.code);});
+  render();
+  await saveCodes(targets.map(c=>c.code),false);
+};
+
+
+
+function fmtOrderId(id){
+  return "#"+String(id||0).padStart(6,"0");
+}
+function fmtDt(v){
+  const d=new Date(v);
+  return Number.isNaN(d.getTime())?String(v||""):d.toLocaleString("ko-KR",{
+    month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"
+  });
+}
+function orderItemsText(items){
+  if(!Array.isArray(items))return "";
+  return items.map(x=>
+    `${x.card_no||x.code} ${x.name_ko||""} ${x.finish||""} ×${x.qty}${x.stock_many?" · 재고많음":""}`
+  ).join("\n");
+}
+function rarityOrder(v){
+  const key=String(v||"Normal").toLowerCase();
+  const map={
+    "signature":0,
+    "sign":0,
+    "over number":1,
+    "overnumber":1,
+    "over":1,
+    "alt":2,
+    "legend":3,
+    "legendary":3,
+    "epic":4,
+    "rare":5,
+    "uncommon":6,
+    "common":7,
+    "normal":8
+  };
+  return map.hasOwnProperty(key)?map[key]:50;
+}
+function orderCardInfo(x){
+  const base=cards.find(v=>v.code===x.code)||{};
+  return {
+    ...base,
+    code:x.code,
+    qty:Number(x.qty||0),
+    card_no:x.card_no||base.card_no||x.code||"",
+    name_ko:x.name_ko||base.name_ko||"",
+    finish:x.finish||base.finish||"",
+    rarity:base.rarity||x.rarity||"Normal",
+    image_url:base.image_url||"",
+    stock_many:Boolean(x.stock_many)
+  };
+}
+function orderImgHtml(item){
+  const a=imgs(item);
+  if(!a.length){
+    return '<div class="order-card-empty">이미지 없음</div>';
+  }
+  const first=a[0];
+  const rest=a.slice(1);
+  return `<img src="${esc(first)}"
+    data-f='${esc(JSON.stringify(rest))}'
+    onerror="ni(this)"
+    loading="lazy"
+    alt="${esc(item.name_ko||item.card_no||"카드")}">`;
+}
+
+function renderOrderItemsGallery(items){
+  if(!Array.isArray(items)||!items.length) return '<div class="sub">주문 카드 정보가 없어.</div>';
+  const arr=items.map(orderCardInfo);
+  const groups={};
+  for(const item of arr){
+    const key=item.rarity||"Normal";
+    (groups[key] ||= []).push(item);
+  }
+  const keys=Object.keys(groups).sort((a,b)=>rarityOrder(a)-rarityOrder(b)||String(a).localeCompare(String(b),"ko"));
+  return keys.map(key=>{
+    const list=groups[key].sort((a,b)=>String(a.card_no||"").localeCompare(String(b.card_no||""),"ko",{numeric:true}));
+    return `<div class="order-group">
+      <div class="order-group-title">${esc(key)}</div>
+      <div class="order-gallery">${list.map(item=>`<div class="order-card">
+        <div class="order-card-imgwrap">
+          ${orderImgHtml(item)}
+          <div class="order-card-qty">×${Number(item.qty||0)}</div>
+        </div>
+        <div class="order-card-body">
+          <div class="order-card-name">${esc(item.name_ko||"")}</div>
+          <div class="order-card-meta">${esc(item.card_no||"")} · ${esc(item.finish||"")}${item.stock_many?" · 재고많음":""}</div>
+        </div>
+      </div>`).join("")}</div>
+    </div>`;
+  }).join("");
+}
+function toggleOrderDetail(btn){
+  const box=btn.closest('[data-order-id]');
+  if(!box) return;
+  const detail=box.querySelector('.order-detail');
+  if(!detail) return;
+  const open=detail.classList.toggle('open');
+  btn.textContent=open?'카드접기':'카드보기';
+}
+function currentOrderProblems(items){
+  if(!Array.isArray(items))return ["주문정보 없음"];
+  const p=[];
+  for(const x of items){
+    const c=cards.find(v=>v.code===x.code);
+    if(!c){p.push(`${x.code}: 카드 없음`);continue;}
+    if(!isMany(c) && Number(x.qty||0)>saleQty(c)){
+      p.push(`${x.card_no||x.code}: 요청 ${x.qty} / 판매가능 ${saleQty(c)}`);
+    }
+  }
+  return p;
+}
+
+async function refreshOrders(){
+  const pendingEl=$("#pendingOrders");
+  const doneEl=$("#completedOrders");
+  pendingEl.innerHTML='<div class="sub">불러오는 중...</div>';
+  doneEl.innerHTML='<div class="sub">불러오는 중...</div>';
+
+  const {data,error}=await S.from("orders")
+    .select("id,created_at,status,total_qty,total_amount,items,completed_at")
+    .in("status",["pending","completed"])
+    .order("created_at",{ascending:false})
+    .limit(100);
+
+  if(error){
+    pendingEl.innerHTML=`<div class="sub">주문 조회 오류: ${esc(error.message)}</div>`;
+    doneEl.innerHTML="";
+    return;
+  }
+
+  const pending=(data||[]).filter(x=>x.status==="pending");
+  const done=(data||[]).filter(x=>x.status==="completed").slice(0,20);
+
+  if(!pending.length){
+    pendingEl.innerHTML='<div class="sub">대기중인 구매 문의가 없어.</div>';
+  }else{
+    pendingEl.innerHTML=pending.map(o=>{
+      const problems=currentOrderProblems(o.items);
+      return `<div class="pending-order" data-order-id="${o.id}">
+        <div class="pending-order-head">
+          <div>
+            <div class="pending-order-title">${fmtOrderId(o.id)} · ${o.total_qty}장 · ${won(o.total_amount)}</div>
+            <div class="pending-order-time">${esc(fmtDt(o.created_at))}</div>
+          </div>
+        </div>
+        <div class="pending-order-items">${esc(orderItemsText(o.items))}</div>
+        <div class="order-detail">${renderOrderItemsGallery(o.items)}</div>
+        ${problems.length?`<div class="order-warning">⚠ 현재 재고 확인: ${esc(problems.join(" / "))}</div>`:""}
+        <div class="pending-order-actions">
+          <button class="complete-order">입금확인 · 결제완료</button>
+          <button class="order-view-btn" onclick="toggleOrderDetail(this);return false;">카드보기</button>
+          <button class="delete-order">삭제</button>
+        </div>
+      </div>`;
+    }).join("");
+  }
+
+  if(!done.length){
+    doneEl.innerHTML='<div class="sub">완료된 주문이 없어.</div>';
+  }else{
+    doneEl.innerHTML=done.map(o=>`
+      <div class="sale-history-item" data-order-id="${o.id}">
+        <div class="sale-history-head" style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+          <b>${fmtOrderId(o.id)} · ${o.total_qty}장 · ${won(o.total_amount)}</b>
+          <button class="order-view-btn" onclick="toggleOrderDetail(this);return false;">카드보기</button>
+        </div>
+        <div class="sale-history-meta">${esc(fmtDt(o.completed_at||o.created_at))}</div>
+        <div class="sale-history-items">${esc(orderItemsText(o.items))}</div>
+        <div class="order-detail">${renderOrderItemsGallery(o.items)}</div>
+      </div>
+    `).join("");
+  }
+}
+
+
+function openOrdersModal(){
+  const m=$("#ordersModal");
+  m.classList.add("show");
+  m.setAttribute("aria-hidden","false");
+  document.body.classList.add("orders-open");
+  refreshOrders();
+}
+function closeOrdersModal(){
+  const m=$("#ordersModal");
+  m.classList.remove("show");
+  m.setAttribute("aria-hidden","true");
+  document.body.classList.remove("orders-open");
+}
+let orderActionBusy=false;
+
+function showOrderStatus(message,type="ok"){
+  const el=$("#orderActionStatus");
+  if(!el)return;
+  el.textContent=message;
+  el.className=`action-status show ${type}`;
+  clearTimeout(showOrderStatus._t);
+  showOrderStatus._t=setTimeout(()=>{
+    el.className="action-status";
+    el.textContent="";
+  },4500);
+}
+
+function askAction({title="확인",message="",okText="확인",danger=false}={}){
+  return new Promise(resolve=>{
+    const modal=$("#actionDialog");
+    const titleEl=$("#actionDialogTitle");
+    const msgEl=$("#actionDialogMessage");
+    const ok=$("#actionDialogOk");
+    const cancel=$("#actionDialogCancel");
+
+    if(!modal || !titleEl || !msgEl || !ok || !cancel){
+      resolve(false);
+      return;
+    }
+
+    titleEl.textContent=title;
+    msgEl.textContent=message;
+    ok.textContent=okText;
+    ok.style.background=danger?"#b91c1c":"#111827";
+
+    const finish=(value)=>{
+      modal.classList.remove("show");
+      modal.setAttribute("aria-hidden","true");
+      ok.onclick=null;
+      cancel.onclick=null;
+      modal.onclick=null;
+      document.removeEventListener("keydown",onKey);
+      resolve(value);
+    };
+
+    const onKey=(e)=>{
+      if(e.key==="Escape")finish(false);
+      if(e.key==="Enter")finish(true);
+    };
+
+    ok.onclick=()=>finish(true);
+    cancel.onclick=()=>finish(false);
+    modal.onclick=e=>{
+      if(e.target===modal)finish(false);
+    };
+    document.addEventListener("keydown",onKey);
+
+    modal.classList.add("show");
+    modal.setAttribute("aria-hidden","false");
+  });
+}
+
+const openOrdersBtn=$("#openOrdersBtn");
+const closeOrdersBtn=$("#closeOrdersBtn");
+const ordersModal=$("#ordersModal");
+const refreshOrdersBtn=$("#refreshOrdersBtn");
+const pendingOrdersEl=$("#pendingOrders");
+
+if(openOrdersBtn) openOrdersBtn.onclick=openOrdersModal;
+if(closeOrdersBtn) closeOrdersBtn.onclick=closeOrdersModal;
+if(ordersModal) ordersModal.addEventListener("click",e=>{
+  if(e.target.id==="ordersModal")closeOrdersModal();
+});
+if(refreshOrdersBtn) refreshOrdersBtn.onclick=refreshOrders;
+
+if(pendingOrdersEl) pendingOrdersEl.addEventListener("click",async e=>{
+  const box=e.target.closest("[data-order-id]");
+  if(!box || orderActionBusy)return;
+
+  const id=Number(box.dataset.orderId||0);
+  if(!id)return;
+
+  const completeBtn=e.target.closest(".complete-order");
+  const deleteBtn=e.target.closest(".delete-order");
+
+  if(completeBtn){
+    const ok=await askAction({
+      title:`${fmtOrderId(id)} 결제완료`,
+      message:"입금을 확인했어?\n결제완료 처리하면 해당 카드 재고가 자동 차감돼.",
+      okText:"결제완료 처리"
+    });
+    if(!ok)return;
+
+    orderActionBusy=true;
+    completeBtn.disabled=true;
+    completeBtn.textContent="처리중…";
+
+    try{
+      const {error}=await S.rpc("complete_pending_order",{p_order_id:id});
+      if(error)throw error;
+
+      showOrderStatus(`${fmtOrderId(id)} 결제완료 · 재고 차감 완료`,"ok");
+      await refreshOrders();
+      await loadCards();
+    }catch(err){
+      completeBtn.disabled=false;
+      completeBtn.textContent="입금확인 · 결제완료";
+      showOrderStatus(`결제완료 실패: ${err?.message||String(err)}`,"error");
+    }finally{
+      orderActionBusy=false;
+    }
+    return;
+  }
+
+  if(deleteBtn){
+    const ok=await askAction({
+      title:`${fmtOrderId(id)} 구매문의 삭제`,
+      message:"이 문의를 대기 목록에서 삭제할까?\n재고에는 영향 없어.",
+      okText:"삭제",
+      danger:true
+    });
+    if(!ok)return;
+
+    orderActionBusy=true;
+    deleteBtn.disabled=true;
+    deleteBtn.textContent="삭제중…";
+
+    try{
+      const {error}=await S.rpc("cancel_pending_order",{p_order_id:id});
+      if(error)throw error;
+
+      showOrderStatus(`${fmtOrderId(id)} 구매문의 삭제 완료`,"ok");
+      await refreshOrders();
+    }catch(err){
+      deleteBtn.disabled=false;
+      deleteBtn.textContent="삭제";
+      showOrderStatus(`삭제 실패: ${err?.message||String(err)}`,"error");
+    }finally{
+      orderActionBusy=false;
+    }
+  }
+});
+
+
+$("#albumViewBtn").onclick=()=>{viewMode="album";localStorage.setItem("riftbound_admin_view",viewMode);applyViewMode()};
+$("#listViewBtn").onclick=()=>{viewMode="list";localStorage.setItem("riftbound_admin_view",viewMode);applyViewMode()};
+$("#fx").onchange=()=>{fx=Math.max(500,Number($("#fx").value||1400));localStorage.setItem("riftbound_admin_fx",String(fx));render()};
+$("#saveBtn").onclick=async()=>{if(!dirty.size)return alert("변경된 항목이 없어.");const ok=await saveCodes([...dirty],false);if(ok)alert("저장 완료")};
+
+const ce=v=>`"${String(v??"").replace(/"/g,'""')}"`;
+$("#exportBtn").onclick=()=>{
+  const a=filtered(),r=[["카드번호","카드명","레어도","유형","피니시","판매노출","전체보유수량","판매가능수량","판매가격(원)","북미가격(원)","현재보유가치(원)"]];
+  a.forEach(c=>r.push([c.card_no,c.name_ko,c.rarity,c.variant,c.finish,c.sale_enabled?"Y":"N",c.total_qty,saleQty(c),c.sell_price,naKrw(c),cv(c)]));
+  const csv="\uFEFF"+r.map(x=>x.map(ce).join(",")).join("\n");
+  const l=document.createElement("a");l.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));l.download=`origins_admin_filtered_${new Date().toISOString().slice(0,10)}.csv`;l.click();URL.revokeObjectURL(l.href);
+};
+
+$("#bulkToggle").onclick=()=>$("#bulk").classList.toggle("open");
+$("#bulkCond").onchange=()=>$("#rangeRow").style.display=$("#bulkCond").value==="range"?"grid":"none";
+function bm(p){
+  const c=$("#bulkCond").value;
+  if(c==="all")return true;
+  if(c==="range"){const a=u2k($("#bulkMin").value),b=u2k($("#bulkMax").value);return p>=a&&p<=b}
+  const x=u2k($("#bulkFrom").value);
+  return c==="equal"?p===x:c==="lte"?p<=x:c==="gte"?p>=x:false;
+}
+function bt(){
+  const f=$("#bulkFin").value;
+  return filtered().filter(c=>{
+    if(f==="NORMAL"||f==="FOIL")return c.finish===f;
+    if(f==="visible"&&$("#finish").value)return c.finish===$("#finish").value;
+    return true;
+  });
+}
+$("#bulkApply").onclick=async()=>{
+  const t=u2k($("#bulkTo").value);if(t<=0)return alert("변경가를 입력해줘.");
+  const changed=[];
+  bt().forEach(c=>{if(bm(Number(c.sell_price||0))){c.sell_price=t;dirty.add(c.code);changed.push(c.code)}});
+  render();
+  if(changed.length)await saveCodes(changed,true);
+  $("#bulkStatus").textContent=`${changed.length}개 변경 및 저장 완료`;
+};
+$("#bulkUndo").onclick=async()=>{
+  const changed=[];
+  bt().forEach(c=>{const o=original[c.code];if(o&&bm(Number(c.sell_price||0))){c.sell_price=o.sell_price;dirty.add(c.code);changed.push(c.code)}});
+  render();
+  if(changed.length)await saveCodes(changed,true);
+  $("#bulkStatus").textContent=`${changed.length}개 마지막 저장값으로 복원`;
+};
+
+["q","rarity","own","variant","finish","sort"].forEach(id=>$("#"+id).addEventListener(id==="q"?"input":"change",render));
+
+
+document.addEventListener("input",e=>{
+  if(!e.target.classList.contains("album-price-input"))return;
+  const cardEl=e.target.closest("[data-code]");
+  if(!cardEl)return;
+  const c=cards.find(x=>x.code===cardEl.dataset.code);
+  if(!c)return;
+  c.sell_price=u2k(e.target.value);
+  dirty.add(c.code);
+  scheduleSave(c.code);
+});
+
+document.addEventListener("change",e=>{
+  if(!e.target.classList.contains("album-price-input"))return;
+  const cardEl=e.target.closest("[data-code]");
+  if(!cardEl)return;
+  const c=cards.find(x=>x.code===cardEl.dataset.code);
+  if(!c)return;
+  c.sell_price=u2k(e.target.value);
+  dirty.add(c.code);
+  saveCodes([c.code],false);
+});
+
+check();
+</script>
+
+</body>
+</html>
