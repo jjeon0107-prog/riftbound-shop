@@ -838,6 +838,86 @@ body.orders-open{overflow:hidden!important}
 }
 
 
+/* v32 sales TOP10 */
+.sales-top-actions{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:7px;
+  margin:0 0 10px;
+}
+.sales-top-actions button{
+  min-height:38px;
+  font-size:11px;
+  font-weight:950;
+}
+.sales-top-modal{
+  position:fixed;
+  inset:0;
+  z-index:10020;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  padding:16px;
+  background:rgba(15,23,42,.55);
+}
+.sales-top-modal.show{display:flex}
+.sales-top-card{
+  width:min(720px,100%);
+  max-height:88vh;
+  display:flex;
+  flex-direction:column;
+  border-radius:14px;
+  background:#fff;
+  box-shadow:0 20px 60px rgba(0,0,0,.30);
+  overflow:hidden;
+}
+.sales-top-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:12px 14px;
+  border-bottom:1px solid var(--line);
+}
+.sales-top-title{font-size:17px;font-weight:950}
+.sales-top-sub{margin-top:2px;font-size:10px;color:var(--muted)}
+.sales-top-close{min-width:58px;min-height:34px;font-weight:900}
+.sales-top-list{
+  overflow:auto;
+  padding:8px 12px 14px;
+  -webkit-overflow-scrolling:touch;
+}
+.sales-top-row{
+  display:grid;
+  grid-template-columns:34px 54px minmax(0,1fr) auto;
+  gap:8px;
+  align-items:center;
+  padding:8px 0;
+  border-bottom:1px solid var(--line);
+}
+.sales-top-rank{
+  font-size:15px;
+  font-weight:950;
+  text-align:center;
+}
+.sales-top-thumb{
+  width:54px;
+  aspect-ratio:63/88;
+  object-fit:cover;
+  border-radius:6px;
+  background:#f1f5f9;
+}
+.sales-top-name{font-size:11.5px;font-weight:950;line-height:1.25}
+.sales-top-meta{margin-top:3px;font-size:9.5px;color:var(--muted);line-height:1.35}
+.sales-top-value{text-align:right;font-size:12px;font-weight:950;white-space:nowrap}
+.sales-top-value small{display:block;margin-top:2px;font-size:9px;color:var(--muted);font-weight:800}
+@media(max-width:600px){
+  .sales-top-row{grid-template-columns:28px 46px minmax(0,1fr) auto;gap:6px}
+  .sales-top-thumb{width:46px}
+  .sales-top-value{font-size:11px}
+}
+
+
 /* v31 visual deck builder */
 .deck-section-tabs{
   display:flex;gap:5px;overflow-x:auto;padding:4px 0 7px;scrollbar-width:none
@@ -1187,7 +1267,7 @@ onclick="const p=document.getElementById('managePanel');const opening=!p.classLi
     <div class="orders-modal-head">
       <div>
         <div class="orders-modal-title">구매목록</div>
-        <div class="orders-modal-sub">카카오 문의로 등록된 주문을 확인하고 처리합니다. · v31</div>
+        <div class="orders-modal-sub">카카오 문의로 등록된 주문을 확인하고 처리합니다. · v32</div>
       </div>
       <button id="closeOrdersBtn" class="orders-close">닫기</button>
     </div>
@@ -1225,12 +1305,32 @@ onclick="const p=document.getElementById('managePanel');const opening=!p.classLi
         </div>
       </div>
 
+      <div class="sales-top-actions">
+        <button id="topSoldCardsBtn">🔥 많이 팔린 카드 TOP10</button>
+        <button id="topRevenueCardsBtn">💰 매출 높은 카드 TOP10</button>
+      </div>
+
       <div id="completedOrders" class="sales-history">
         <div class="sub">완료 주문을 불러오는 중...</div>
       </div>
     </div>
 
     <div id="orderActionStatus" class="action-status" role="status" aria-live="polite"></div>
+  </div>
+</div>
+
+<div id="salesTopModal" class="sales-top-modal" aria-hidden="true">
+  <div class="sales-top-card" role="dialog" aria-modal="true" aria-labelledby="salesTopTitle">
+    <div class="sales-top-head">
+      <div>
+        <div id="salesTopTitle" class="sales-top-title">판매 TOP10</div>
+        <div id="salesTopSub" class="sales-top-sub">완료 주문 전체 기준</div>
+      </div>
+      <button id="salesTopCloseBtn" class="sales-top-close">닫기</button>
+    </div>
+    <div id="salesTopList" class="sales-top-list">
+      <div class="sub">불러오는 중...</div>
+    </div>
   </div>
 </div>
 
@@ -1810,6 +1910,156 @@ function currentOrderProblems(items){
 }
 
 
+
+let completedSalesCache=null;
+
+async function loadAllCompletedSales(force=false){
+  if(completedSalesCache && !force)return completedSalesCache;
+
+  let from=0;
+  const pageSize=1000;
+  const all=[];
+
+  while(true){
+    const {data,error}=await S.from("orders")
+      .select("id,total_qty,total_amount,items,completed_at,created_at")
+      .eq("status","completed")
+      .order("id",{ascending:true})
+      .range(from,from+pageSize-1);
+
+    if(error)throw error;
+
+    const rows=data||[];
+    all.push(...rows);
+    if(rows.length<pageSize)break;
+    from+=pageSize;
+  }
+
+  completedSalesCache=all;
+  return all;
+}
+
+function salesTopAggregate(orders){
+  const map=new Map();
+
+  for(const o of (orders||[])){
+    const items=Array.isArray(o.items)?o.items:[];
+    if(!items.length)continue;
+
+    const itemBases=items.map(x=>{
+      const qty=Math.max(0,Number(x.qty||0));
+      const base=Number(x.line_total||0)>0
+        ? Number(x.line_total||0)
+        : Math.max(0,Number(x.unit_price||0))*qty;
+      return {x,qty,base};
+    });
+    const baseSum=itemBases.reduce((s,v)=>s+v.base,0);
+    const orderAmount=Math.max(0,Number(o.total_amount||0));
+    const orderQty=itemBases.reduce((s,v)=>s+v.qty,0);
+
+    for(const v of itemBases){
+      const x=v.x;
+      const code=String(x.code||"").trim();
+      if(!code || v.qty<=0)continue;
+
+      let revenue=0;
+      if(baseSum>0){
+        revenue=orderAmount*(v.base/baseSum);
+      }else if(orderQty>0){
+        revenue=orderAmount*(v.qty/orderQty);
+      }
+
+      if(!map.has(code)){
+        map.set(code,{
+          code,
+          qty:0,
+          revenue:0,
+          card_no:x.card_no||"",
+          name_ko:x.name_ko||"",
+          finish:x.finish||""
+        });
+      }
+      const a=map.get(code);
+      a.qty+=v.qty;
+      a.revenue+=revenue;
+      if(!a.card_no)a.card_no=x.card_no||"";
+      if(!a.name_ko)a.name_ko=x.name_ko||"";
+      if(!a.finish)a.finish=x.finish||"";
+    }
+  }
+
+  return [...map.values()];
+}
+
+function salesTopImageHtml(item){
+  const c=cards.find(x=>x.code===item.code);
+  if(!c)return '<div class="sales-top-thumb"></div>';
+  const a=imgs(c);
+  if(!a.length)return '<div class="sales-top-thumb"></div>';
+  return `<img class="sales-top-thumb" src="${esc(a[0])}" loading="lazy" alt="${esc(c.name_ko||item.name_ko||"")}">`;
+}
+
+async function openSalesTop(mode){
+  const modal=$("#salesTopModal");
+  const list=$("#salesTopList");
+  const title=$("#salesTopTitle");
+  const sub=$("#salesTopSub");
+  if(!modal||!list)return;
+
+  modal.classList.add("show");
+  modal.setAttribute("aria-hidden","false");
+  list.innerHTML='<div class="sub">집계하는 중...</div>';
+
+  const isRevenue=mode==="revenue";
+  title.textContent=isRevenue?"💰 매출 높은 카드 TOP10":"🔥 많이 팔린 카드 TOP10";
+  sub.textContent=isRevenue
+    ?"완료 주문 전체 기준 · 실제 주문금액을 카드별 판매금액 비율로 배분"
+    :"완료 주문 전체 기준 · 판매 장수 합계";
+
+  try{
+    const orders=await loadAllCompletedSales();
+    const rows=salesTopAggregate(orders)
+      .sort((a,b)=>isRevenue
+        ? b.revenue-a.revenue || b.qty-a.qty
+        : b.qty-a.qty || b.revenue-a.revenue)
+      .slice(0,10);
+
+    if(!rows.length){
+      list.innerHTML='<div class="sub" style="padding:20px;text-align:center">완료 판매 데이터가 없어.</div>';
+      return;
+    }
+
+    list.innerHTML=rows.map((x,i)=>{
+      const c=cards.find(v=>v.code===x.code);
+      const name=c?.name_ko||x.name_ko||x.code;
+      const cardNo=c?.card_no||x.card_no||x.code;
+      const finish=c?.finish||x.finish||"";
+      const currentSale=isMany(c||{})?"재고많음":`현재 판매가능 ${c?saleQty(c):0}장`;
+      return `<div class="sales-top-row">
+        <div class="sales-top-rank">${i+1}</div>
+        ${salesTopImageHtml(x)}
+        <div>
+          <div class="sales-top-name">${esc(name)}</div>
+          <div class="sales-top-meta">${esc(cardNo)} · ${esc(finish)} · ${esc(currentSale)}</div>
+        </div>
+        <div class="sales-top-value">
+          ${isRevenue?won(Math.round(x.revenue)):`${x.qty.toLocaleString()}장`}
+          <small>${isRevenue?`${x.qty.toLocaleString()}장 판매`:`매출 ${won(Math.round(x.revenue))}`}</small>
+        </div>
+      </div>`;
+    }).join("");
+  }catch(e){
+    list.innerHTML=`<div class="sub" style="padding:20px">TOP10 조회 실패: ${esc(e?.message||String(e))}</div>`;
+  }
+}
+
+function closeSalesTop(){
+  const modal=$("#salesTopModal");
+  if(!modal)return;
+  modal.classList.remove("show");
+  modal.setAttribute("aria-hidden","true");
+}
+
 async function loadCompletedSalesSummary(){
   const ordersEl=$("#summaryOrders");
   const cardsEl=$("#summaryCards");
@@ -1822,26 +2072,8 @@ async function loadCompletedSalesSummary(){
   amountEl.textContent="…";
   avgEl.textContent="…";
 
-  let from=0;
-  const pageSize=1000;
-  let all=[];
-
   try{
-    while(true){
-      const {data,error}=await S.from("orders")
-        .select("id,total_qty,total_amount")
-        .eq("status","completed")
-        .order("id",{ascending:true})
-        .range(from,from+pageSize-1);
-
-      if(error)throw error;
-
-      const rows=data||[];
-      all.push(...rows);
-
-      if(rows.length<pageSize)break;
-      from+=pageSize;
-    }
+    const all=await loadAllCompletedSales();
 
     const orderCount=all.length;
     const cardCount=all.reduce((s,o)=>s+Number(o.total_qty||0),0);
@@ -1866,6 +2098,7 @@ async function refreshOrders(){
   const doneEl=$("#completedOrders");
   pendingEl.innerHTML='<div class="sub">불러오는 중...</div>';
   doneEl.innerHTML='<div class="sub">불러오는 중...</div>';
+  completedSalesCache=null;
   loadCompletedSalesSummary();
 
   const {data,error}=await S.from("orders")
@@ -2331,6 +2564,12 @@ if(ordersModal) ordersModal.addEventListener("click",e=>{
 });
 if(refreshOrdersBtn) refreshOrdersBtn.onclick=refreshOrders;
 
+$("#topSoldCardsBtn")?.addEventListener("click",()=>openSalesTop("sold"));
+$("#topRevenueCardsBtn")?.addEventListener("click",()=>openSalesTop("revenue"));
+$("#salesTopCloseBtn")?.addEventListener("click",closeSalesTop);
+$("#salesTopModal")?.addEventListener("click",e=>{
+  if(e.target.id==="salesTopModal")closeSalesTop();
+});
 
 if(completedOrdersEl) completedOrdersEl.addEventListener("click",async e=>{
   const saveBtn=e.target.closest(".completed-price-save");
