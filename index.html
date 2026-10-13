@@ -457,6 +457,36 @@ body.cart-open{
   .compact-deck-chips{padding-top:4px}
 }
 
+
+/* v26 update time + public sales summary */
+.shop-status-strip{
+  display:flex;
+  align-items:center;
+  gap:5px;
+  flex-wrap:wrap;
+  margin:4px 0 6px;
+  padding:5px 8px;
+  border:1px solid var(--line);
+  border-radius:9px;
+  background:#f8fafc;
+  font-size:10.5px;
+  font-weight:800;
+  color:#475569;
+}
+.shop-status-strip .last-updated{
+  margin:0!important;
+  padding:0!important;
+}
+.shop-status-dot{color:#94a3b8}
+#publicStockSummary{color:#0f172a}
+@media(max-width:800px){
+  .shop-status-strip{
+    margin:3px 0 5px;
+    padding:4px 7px;
+    font-size:9.5px;
+  }
+}
+
 </style>
 
 
@@ -667,7 +697,11 @@ body.cart-open{
 </header>
 
 <main class="wrap">
-  <div id="lastUpdated" class="last-updated">최종 업데이트 확인 중...</div>
+  <div class="shop-status-strip">
+    <span id="lastUpdated" class="last-updated">최종 업데이트 확인 중...</span>
+    <span class="shop-status-dot">·</span>
+    <span id="publicStockSummary">판매 현황 계산 중...</span>
+  </div>
 
   <section id="deckShop" class="deck-shop compact-deck-shop">
     <div class="deck-shop-head compact-deck-head">
@@ -685,7 +719,7 @@ body.cart-open{
   </div>
   <div style="height:90px"></div>
   <div class="sub" style="text-align:center;padding:12px 0 90px">
-    <span style="opacity:.45">build v25 DECK-COMPACT</span><br>
+    <span style="opacity:.45">build v26 STATUS</span><br>
     카드 이미지 © Riot Games · 비공식 개인 판매 페이지
   </div>
 </main>
@@ -795,6 +829,7 @@ let cart = {};
 
 const cardsEl = document.querySelector("#cards");
 const lastUpdatedEl = document.querySelector("#lastUpdated");
+const publicStockSummaryEl = document.querySelector("#publicStockSummary");
 const storeNameEl = document.querySelector("#storeName");
 const noticeEl = document.querySelector("#notice");
 const qEl = document.querySelector("#q");
@@ -970,6 +1005,8 @@ async function load() {
 
     buildFilters();
     render();
+    updateLastUpdated();
+    updatePublicStockSummary();
 
     try{
       const settings=await restGet(
@@ -1070,6 +1107,29 @@ function updateLastUpdated(){
     .filter(Boolean)
     .sort((a,b)=>new Date(b)-new Date(a))[0];
   lastUpdatedEl.textContent=`최종 업데이트 ${formatUpdatedAt(latest)}`;
+}
+
+function updatePublicStockSummary(){
+  if(!publicStockSummaryEl)return;
+
+  let available=0;
+  let manyKinds=0;
+
+  for(const c of cards){
+    if(isMany(c)){
+      manyKinds+=1;
+    }else{
+      available+=Math.max(0,Number(c.sell_qty||0));
+    }
+  }
+
+  const sold=Object.values(soldCounts).reduce((s,v)=>s+Math.max(0,Number(v||0)),0);
+
+  let text=`판매가능 ${available.toLocaleString()}장`;
+  if(manyKinds>0) text+=` + 재고많음 ${manyKinds}종`;
+  text+=` · 판매완료 ${sold.toLocaleString()}장`;
+
+  publicStockSummaryEl.textContent=text;
 }
 
 
