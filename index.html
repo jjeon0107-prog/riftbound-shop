@@ -487,6 +487,31 @@ body.cart-open{
   }
 }
 
+
+/* v27 grouped buyer cart */
+.cart-group{margin:4px 0 10px}
+.cart-group-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:8px;
+  padding:7px 4px 5px;
+  font-size:11px;
+  font-weight:950;
+  color:#334155;
+  border-bottom:1px solid var(--line);
+}
+.cart-subgroup-head{
+  margin:7px 0 2px;
+  padding:4px 7px;
+  border-radius:999px;
+  background:#eef2f7;
+  color:#475569;
+  font-size:9.5px;
+  font-weight:900;
+  display:inline-block;
+}
+
 </style>
 
 
@@ -719,7 +744,7 @@ body.cart-open{
   </div>
   <div style="height:90px"></div>
   <div class="sub" style="text-align:center;padding:12px 0 90px">
-    <span style="opacity:.45">build v26 STATUS</span><br>
+    <span style="opacity:.45">build v27 CART-GROUPS</span><br>
     카드 이미지 © Riot Games · 비공식 개인 판매 페이지
   </div>
 </main>
@@ -1367,12 +1392,74 @@ function closeCartDrawer(){
   }
 }
 
+
+function cardNoCompare(a,b){
+  return String(a.card_no||"").localeCompare(String(b.card_no||""),"ko",{numeric:true});
+}
+function foilGroupKey(c){
+  const variant=String(c.variant||"").trim().toLowerCase();
+  const rarity=String(c.rarity||"").trim().toLowerCase();
+
+  if(variant.includes("signature")) return "Signature";
+  if(variant.includes("overnumber") || variant.includes("over number") || variant.includes("kr overnumber")) return "Overnumber";
+  if(variant.includes("alt")) return "Alt Art";
+  if(["legend","legendary"].includes(rarity)) return "Legendary";
+  if(rarity==="epic") return "Epic";
+  if(rarity==="rare") return "Rare";
+  if(["uncommon","common","u","c","언커먼","커먼"].includes(rarity)) return "Common / Uncommon";
+  return c.rarity||c.variant||"기타";
+}
+const FOIL_GROUP_ORDER=["Signature","Overnumber","Alt Art","Legendary","Epic","Rare","Common / Uncommon"];
+
+function groupedSelectedCards(list){
+  const normal=list.filter(c=>String(c.finish||"").toUpperCase()!=="FOIL").sort(cardNoCompare);
+  const foil=list.filter(c=>String(c.finish||"").toUpperCase()==="FOIL");
+  const foilGroups={};
+  for(const c of foil){
+    const key=foilGroupKey(c);
+    (foilGroups[key] ||= []).push(c);
+  }
+  Object.values(foilGroups).forEach(a=>a.sort(cardNoCompare));
+  const foilKeys=Object.keys(foilGroups).sort((a,b)=>{
+    const ia=FOIL_GROUP_ORDER.indexOf(a), ib=FOIL_GROUP_ORDER.indexOf(b);
+    const aa=ia<0?999:ia, bb=ib<0?999:ib;
+    return aa-bb || String(a).localeCompare(String(b),"ko");
+  });
+  return {normal,foilGroups,foilKeys};
+}
+
+function cartItemHtml(c){
+  const imgs = cardImageCandidates(c);
+  const thumb = imgs.length
+    ? `<img class="cart-thumb" src="${esc(imgs[0])}" loading="lazy">`
+    : '<div class="cart-thumb"></div>';
+
+  return `
+    <div class="cart-item" data-code="${esc(c.code)}">
+      ${thumb}
+      <div class="cart-info">
+        <div class="cart-name">${esc(c.name_ko)}</div>
+        <div class="cart-meta">${esc(c.card_no)} · ${esc(c.rarity||"")} · ${esc(c.variant||"Standard")} · ${esc(c.finish)}</div>
+        <div class="cart-price">${won(c.sell_price)} × ${c.buy_qty} = ${won(c.sell_price*c.buy_qty)}</div>
+      </div>
+      <div class="cart-actions">
+        <button class="drawer-minus">−</button>
+        <div class="cart-q">${c.buy_qty}</div>
+        <button class="drawer-plus">＋</button>
+        <button class="cart-remove">삭제</button>
+      </div>
+    </div>
+  `;
+}
+
 function renderCartDrawer() {
   const s = selected();
   const qty = s.reduce((a, c) => a + c.buy_qty, 0);
   const sum = s.reduce((a, c) => a + c.buy_qty * c.sell_price, 0);
+  const normalQty=s.filter(c=>String(c.finish||"").toUpperCase()!=="FOIL").reduce((a,c)=>a+c.buy_qty,0);
+  const foilQty=qty-normalQty;
 
-  drawerQtyEl.textContent = `총 ${qty}장`;
+  drawerQtyEl.textContent = `총 ${qty}장 · 일반 ${normalQty} · FOIL ${foilQty}`;
   drawerTotalEl.textContent = won(sum);
 
   if (!s.length) {
@@ -1380,29 +1467,25 @@ function renderCartDrawer() {
     return;
   }
 
-  cartListEl.innerHTML = s.map(c => {
-    const imgs = cardImageCandidates(c);
-    const thumb = imgs.length
-      ? `<img class="cart-thumb" src="${esc(imgs[0])}" loading="lazy">`
-      : '<div class="cart-thumb"></div>';
+  const g=groupedSelectedCards(s);
+  const normalHtml=g.normal.length
+    ? `<div class="cart-group">
+        <div class="cart-group-head"><span>일반 카드</span><span>${normalQty}장</span></div>
+        ${g.normal.map(cartItemHtml).join("")}
+      </div>`
+    : "";
 
-    return `
-      <div class="cart-item" data-code="${esc(c.code)}">
-        ${thumb}
-        <div class="cart-info">
-          <div class="cart-name">${esc(c.name_ko)}</div>
-          <div class="cart-meta">${esc(c.card_no)} · ${esc(c.finish)}</div>
-          <div class="cart-price">${won(c.sell_price)} × ${c.buy_qty} = ${won(c.sell_price*c.buy_qty)}</div>
-        </div>
-        <div class="cart-actions">
-          <button class="drawer-minus">−</button>
-          <div class="cart-q">${c.buy_qty}</div>
-          <button class="drawer-plus">＋</button>
-          <button class="cart-remove">삭제</button>
-        </div>
-      </div>
-    `;
-  }).join("");
+  const foilHtml=foilQty
+    ? `<div class="cart-group">
+        <div class="cart-group-head"><span>FOIL</span><span>${foilQty}장</span></div>
+        ${g.foilKeys.map(key=>`
+          <div class="cart-subgroup-head">${esc(key)} · ${g.foilGroups[key].reduce((a,c)=>a+c.buy_qty,0)}장</div>
+          ${g.foilGroups[key].map(cartItemHtml).join("")}
+        `).join("")}
+      </div>`
+    : "";
+
+  cartListEl.innerHTML=normalHtml+foilHtml;
 }
 
 function orderText(orderId=null) {
@@ -1410,21 +1493,41 @@ function orderText(orderId=null) {
   if (!s.length) return "";
 
   const qty = s.reduce((a, c) => a + c.buy_qty, 0);
-  const sum = s.reduce(
-    (a, c) => a + c.buy_qty * c.sell_price,
-    0
-  );
+  const sum = s.reduce((a, c) => a + c.buy_qty * c.sell_price, 0);
+  const g=groupedSelectedCards(s);
+  const normalQty=g.normal.reduce((a,c)=>a+c.buy_qty,0);
+  const foilQty=qty-normalQty;
 
-  return [
+  const lines=[
     "[리프트바운드 오리진 구매 문의]",
     ...(orderId ? [`문의번호 #${String(orderId).padStart(6,"0")}`] : []),
-    ...s.map(
-      c =>
-        `[${c.code}] ${c.card_no} ${c.name_ko} ${c.finish} × ${c.buy_qty} — ${won(c.sell_price * c.buy_qty)}`
-    ),
-    "",
-    `총 ${qty}장 / ${won(sum)}`
-  ].join("\n");
+    `총 ${qty}장 · 일반 ${normalQty}장 · FOIL ${foilQty}장 / ${won(sum)}`,
+    ""
+  ];
+
+  if(g.normal.length){
+    lines.push(`[일반 카드 · ${normalQty}장]`);
+    for(const c of g.normal){
+      lines.push(`${c.card_no} ${c.name_ko} ×${c.buy_qty} — ${won(c.sell_price*c.buy_qty)}`);
+    }
+    lines.push("");
+  }
+
+  if(foilQty){
+    lines.push(`[FOIL · ${foilQty}장]`);
+    for(const key of g.foilKeys){
+      const list=g.foilGroups[key];
+      const subQty=list.reduce((a,c)=>a+c.buy_qty,0);
+      lines.push(`<${key} · ${subQty}장>`);
+      for(const c of list){
+        lines.push(`${c.card_no} ${c.name_ko} ×${c.buy_qty} — ${won(c.sell_price*c.buy_qty)}`);
+      }
+      lines.push("");
+    }
+  }
+
+  lines.push(`총 ${qty}장 / ${won(sum)}`);
+  return lines.join("\n");
 }
 
 
@@ -1437,6 +1540,8 @@ function pendingOrderItems(){
     name_ko:c.name_ko||"",
     card_no:c.card_no||"",
     finish:c.finish||"",
+    rarity:c.rarity||"",
+    variant:c.variant||"",
     stock_many:Boolean(c.stock_many)
   }));
 }
