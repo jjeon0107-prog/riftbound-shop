@@ -1267,7 +1267,7 @@ onclick="const p=document.getElementById('managePanel');const opening=!p.classLi
     <div class="orders-modal-head">
       <div>
         <div class="orders-modal-title">구매목록</div>
-        <div class="orders-modal-sub">카카오 문의로 등록된 주문을 확인하고 처리합니다. · v32</div>
+        <div class="orders-modal-sub">카카오 문의로 등록된 주문을 확인하고 처리합니다. · v33</div>
       </div>
       <button id="closeOrdersBtn" class="orders-close">닫기</button>
     </div>
@@ -1866,13 +1866,34 @@ function renderOrderItemsGallery(items){
   if(!Array.isArray(items)||!items.length) return '<div class="sub">주문 카드 정보가 없어.</div>';
   const arr=items.map(orderCardInfo);
   const groups={};
+
   for(const item of arr){
-    const key=item.rarity||"Normal";
+    const rarity=String(item.rarity||"Normal").trim();
+    const rarityKey=rarity.toLowerCase();
+    const finish=String(item.finish||"").trim().toUpperCase();
+    const isCU=["common","uncommon","커먼","언커먼","c","u"].includes(rarityKey);
+
+    let key=rarity;
+    if(isCU && finish==="FOIL") key="FOIL Common / Uncommon";
+    else if(isCU) key="Common / Uncommon";
+
     (groups[key] ||= []).push(item);
   }
-  const keys=Object.keys(groups).sort((a,b)=>rarityOrder(a)-rarityOrder(b)||String(a).localeCompare(String(b),"ko"));
+
+  const groupOrder=key=>{
+    if(key==="FOIL Common / Uncommon") return 6;
+    if(key==="Common / Uncommon") return 7;
+    return rarityOrder(key);
+  };
+
+  const keys=Object.keys(groups).sort((a,b)=>
+    groupOrder(a)-groupOrder(b) || String(a).localeCompare(String(b),"ko")
+  );
+
   return keys.map(key=>{
-    const list=groups[key].sort((a,b)=>String(a.card_no||"").localeCompare(String(b.card_no||""),"ko",{numeric:true}));
+    const list=groups[key].sort((a,b)=>
+      String(a.card_no||"").localeCompare(String(b.card_no||""),"ko",{numeric:true})
+    );
     return `<div class="order-group">
       <div class="order-group-title">${esc(key)}</div>
       <div class="order-gallery">${list.map(item=>`<div class="order-card">
