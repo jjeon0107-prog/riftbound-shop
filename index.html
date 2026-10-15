@@ -725,6 +725,8 @@ body.cart-open{
           <b id="guideMain">원하는 카드를 선택한 뒤 구매목록을 카카오톡으로 보내주세요.</b>
           <div id="guideLine1">• 수량·가격은 수시 업데이트 / 입금순 판매</div>
           <div id="guideLine2">• 포일 이상 슬리브 / 고가 카드 탑로더</div>
+          <div id="guideLine3"></div>
+          <div id="guideLine4"></div>
         </div>
       </details>
     </div>
@@ -776,7 +778,7 @@ body.cart-open{
   </div>
   <div style="height:90px"></div>
   <div class="sub" style="text-align:center;padding:12px 0 90px">
-    <span style="opacity:.45">build v28 BILINGUAL</span><br>
+    <span style="opacity:.45">build v29 EN-GUIDE</span><br>
     <span id="footerText">카드 이미지 © Riot Games · 비공식 개인 판매 페이지</span>
   </div>
 </main>
@@ -889,6 +891,8 @@ const I18N={
     guideMain:"원하는 카드를 선택한 뒤 구매목록을 카카오톡으로 보내주세요.",
     guide1:"• 수량·가격은 수시 업데이트 / 입금순 판매",
     guide2:"• 포일 이상 슬리브 / 고가 카드 탑로더",
+    guide3:"",
+    guide4:"",
     search:"카드명 / 번호 검색", rarity:"전체 레어도", variant:"전체 유형",
     sortDefault:"기본순", sortHigh:"구매가격 높은순", sortLow:"구매가격 낮은순", sortNo:"카드번호순", sortSold:"많이 팔린순",
     updated:"최종 업데이트", noUpdate:"업데이트 기록 없음", salesCalc:"판매 현황 계산 중...",
@@ -912,7 +916,9 @@ const I18N={
     store:"Riftbound Origin Card Shop", guide:"Purchase Info",
     guideMain:"Select the cards you want, then copy the purchase list and send it via KakaoTalk.",
     guide1:"• Prices and stock are updated frequently / First paid, first served",
-    guide2:"• FOIL+ cards sleeved / High-value cards shipped in top loaders",
+    guide2:"• Please contact me on KakaoTalk for detailed questions.",
+    guide3:"• Prices are updated regularly. If any card seems overpriced, please ask — price adjustments may be possible.",
+    guide4:"• Once your final card list is confirmed, I can create a listing on Global Bunjang for payment and international shipping.",
     search:"Search card name / number", rarity:"All rarities", variant:"All variants",
     sortDefault:"Default", sortHigh:"Price: High to Low", sortLow:"Price: Low to High", sortNo:"Card Number", sortSold:"Best Selling",
     updated:"Last updated", noUpdate:"No update record", salesCalc:"Calculating stock...",
@@ -992,11 +998,15 @@ function applyLanguage(){
   const guideMain=document.querySelector("#guideMain");
   const guideLine1=document.querySelector("#guideLine1");
   const guideLine2=document.querySelector("#guideLine2");
+  const guideLine3=document.querySelector("#guideLine3");
+  const guideLine4=document.querySelector("#guideLine4");
   if(storeNameEl)storeNameEl.textContent=T("store");
   if(guideSummary)guideSummary.textContent=T("guide");
   if(guideMain)guideMain.textContent=T("guideMain");
   if(guideLine1)guideLine1.textContent=T("guide1");
   if(guideLine2)guideLine2.textContent=T("guide2");
+  if(guideLine3){guideLine3.textContent=T("guide3");guideLine3.style.display=T("guide3")?"block":"none";}
+  if(guideLine4){guideLine4.textContent=T("guide4");guideLine4.style.display=T("guide4")?"block":"none";}
   if(qEl)qEl.placeholder=T("search");
   setSelectFirstText(rarityEl,T("rarity"));
   setSelectFirstText(variantEl,T("variant"));
