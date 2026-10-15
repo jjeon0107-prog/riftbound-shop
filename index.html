@@ -512,6 +512,34 @@ body.cart-open{
   display:inline-block;
 }
 
+
+/* v28 bilingual KR/EN */
+.lang-switch{
+  display:flex;
+  align-items:center;
+  gap:2px;
+  margin-left:auto;
+  margin-right:4px;
+  padding:2px;
+  border:1px solid var(--line);
+  border-radius:8px;
+  background:#fff;
+  flex:0 0 auto;
+}
+.lang-switch button{
+  border:0;
+  background:transparent;
+  border-radius:6px;
+  padding:4px 7px;
+  font-size:10px;
+  font-weight:900;
+  cursor:pointer;
+}
+.lang-switch button.active{background:#111827;color:#fff}
+@media(max-width:800px){
+  .lang-switch button{padding:4px 6px;font-size:9.5px}
+}
+
 </style>
 
 
@@ -687,12 +715,16 @@ body.cart-open{
   <div class="head compact-head">
     <div class="compact-title-row">
       <h1 id="storeName">리프트바운드 오리진 카드샵</h1>
+      <div class="lang-switch" aria-label="Language">
+        <button id="langKoBtn" type="button">KR</button>
+        <button id="langEnBtn" type="button">EN</button>
+      </div>
       <details class="compact-guide">
-        <summary>구매안내</summary>
+        <summary id="guideSummary">구매안내</summary>
         <div class="compact-guide-pop">
-          <b>원하는 카드를 선택한 뒤 구매목록을 카카오톡으로 보내주세요.</b>
-          <div>• 수량·가격은 수시 업데이트 / 입금순 판매</div>
-          <div>• 포일 이상 슬리브 / 고가 카드 탑로더</div>
+          <b id="guideMain">원하는 카드를 선택한 뒤 구매목록을 카카오톡으로 보내주세요.</b>
+          <div id="guideLine1">• 수량·가격은 수시 업데이트 / 입금순 판매</div>
+          <div id="guideLine2">• 포일 이상 슬리브 / 고가 카드 탑로더</div>
         </div>
       </details>
     </div>
@@ -730,7 +762,7 @@ body.cart-open{
 
   <section id="deckShop" class="deck-shop compact-deck-shop">
     <div class="deck-shop-head compact-deck-head">
-      <div class="deck-shop-title">🧩 추천 덱</div>
+      <div id="deckShopTitle" class="deck-shop-title">🧩 추천 덱</div>
       <button id="deckPanelToggle" class="deck-panel-toggle" type="button">덱 보기</button>
     </div>
     <div id="deckChips" class="deck-chips compact-deck-chips"></div>
@@ -744,8 +776,8 @@ body.cart-open{
   </div>
   <div style="height:90px"></div>
   <div class="sub" style="text-align:center;padding:12px 0 90px">
-    <span style="opacity:.45">build v27 CART-GROUPS</span><br>
-    카드 이미지 © Riot Games · 비공식 개인 판매 페이지
+    <span style="opacity:.45">build v28 BILINGUAL</span><br>
+    <span id="footerText">카드 이미지 © Riot Games · 비공식 개인 판매 페이지</span>
   </div>
 </main>
 
@@ -753,9 +785,7 @@ body.cart-open{
   <div class="cartinner">
     <div>
       <b id="cartSummary">선택 0장 · ₩0</b>
-      <div class="sub" style="color:#bbb">
-        구매목록을 복사한 뒤 카카오톡으로 보내주세요.
-      </div>
+      <div id="cartHelpText" class="sub" style="color:#bbb">구매목록을 복사한 뒤 카카오톡으로 보내주세요.</div>
     </div>
     <button id="cartViewBtn" onclick="openCartDrawer();return false;">구매목록 보기</button>
     <button id="copyBtn">구매목록 복사</button>
@@ -767,7 +797,7 @@ body.cart-open{
 <div id="cartDrawer" class="cart-drawer">
   <div class="cart-sheet">
     <div class="cart-sheet-head">
-      <h2>구매목록</h2>
+      <h2 id="cartDrawerTitle">구매목록</h2>
       <button id="cartCloseBtn" onclick="closeCartDrawer();return false;">닫기</button>
     </div>
     <div id="cartList" class="cart-list"></div>
@@ -851,6 +881,60 @@ let deckBundles = [];
 let selectedDeckId = null;
 let deckPanelOpen = false;
 let cart = {};
+let lang=(new URLSearchParams(location.search).get("lang")||localStorage.getItem("riftbound_lang")||"ko").toLowerCase()==="en"?"en":"ko";
+
+const I18N={
+  ko:{
+    store:"리프트바운드 오리진 카드샵", guide:"구매안내",
+    guideMain:"원하는 카드를 선택한 뒤 구매목록을 카카오톡으로 보내주세요.",
+    guide1:"• 수량·가격은 수시 업데이트 / 입금순 판매",
+    guide2:"• 포일 이상 슬리브 / 고가 카드 탑로더",
+    search:"카드명 / 번호 검색", rarity:"전체 레어도", variant:"전체 유형",
+    sortDefault:"기본순", sortHigh:"구매가격 높은순", sortLow:"구매가격 낮은순", sortNo:"카드번호순", sortSold:"많이 팔린순",
+    updated:"최종 업데이트", noUpdate:"업데이트 기록 없음", salesCalc:"판매 현황 계산 중...",
+    available:"판매가능", many:"재고많음", sold:"판매완료", kinds:"종", cards:"장",
+    deckTitle:"🧩 추천 덱", deckOpen:"덱 보기", deckClose:"덱 닫기",
+    selected:"선택", viewCart:"구매목록 보기", copy:"구매목록 복사", kakao:"카카오톡 문의",
+    cartHelp:"구매목록을 복사한 뒤 카카오톡으로 보내주세요.", cartTitle:"구매목록", close:"닫기",
+    emptyAll:"전체 비우기", copyList:"목록 복사", kakaoShort:"카카오 문의",
+    total:"총", normal:"일반", normalCards:"일반 카드", emptyCart:"아직 선택한 카드가 없습니다.",
+    soldOut:"품절", noMatches:"조건에 맞는 판매 카드가 없습니다.", loading:"카드 목록을 불러오는 중...",
+    footer:"카드 이미지 © Riot Games · 비공식 개인 판매 페이지",
+    inquiry:"[리프트바운드 오리진 구매 문의]", orderNo:"문의번호",
+    copied:"구매목록을 복사했습니다.", selectCard:"카드를 선택해 주세요.",
+    kakaoMissing:"카카오 오픈채팅 주소가 아직 설정되지 않았습니다.",
+    orderDone:"등록 완료\n구매목록을 복사했습니다.\n카카오톡에서 붙여넣어 보내주세요.",
+    orderFail:"구매문의 등록 실패: ", copyPrompt:"아래 내용을 길게 눌러 복사해 주세요.",
+    allBuyable:"현재 전 구성 구매 가능", missing:"부족", composition:"구성", currentBuy:"현재 구매",
+    addAvailable:"가능한 카드", addAtOnce:"장 한 번에 담기"
+  },
+  en:{
+    store:"Riftbound Origin Card Shop", guide:"Purchase Info",
+    guideMain:"Select the cards you want, then copy the purchase list and send it via KakaoTalk.",
+    guide1:"• Prices and stock are updated frequently / First paid, first served",
+    guide2:"• FOIL+ cards sleeved / High-value cards shipped in top loaders",
+    search:"Search card name / number", rarity:"All rarities", variant:"All variants",
+    sortDefault:"Default", sortHigh:"Price: High to Low", sortLow:"Price: Low to High", sortNo:"Card Number", sortSold:"Best Selling",
+    updated:"Last updated", noUpdate:"No update record", salesCalc:"Calculating stock...",
+    available:"Available", many:"In stock", sold:"Sold", kinds:"types", cards:"cards",
+    deckTitle:"🧩 Recommended Decks", deckOpen:"View Deck", deckClose:"Close Deck",
+    selected:"Selected", viewCart:"View Purchase List", copy:"Copy List", kakao:"Kakao Inquiry",
+    cartHelp:"Copy the purchase list and send it to me via KakaoTalk.", cartTitle:"Purchase List", close:"Close",
+    emptyAll:"Clear All", copyList:"Copy List", kakaoShort:"Kakao Inquiry",
+    total:"Total", normal:"Normal", normalCards:"Normal Cards", emptyCart:"No cards selected yet.",
+    soldOut:"SOLD OUT", noMatches:"No cards match your filters.", loading:"Loading cards...",
+    footer:"Card images © Riot Games · Unofficial personal sales page",
+    inquiry:"[Riftbound Origin Purchase Inquiry]", orderNo:"Order",
+    copied:"Purchase list copied.", selectCard:"Please select at least one card.",
+    kakaoMissing:"KakaoTalk inquiry link is not configured.",
+    orderDone:"registered\nPurchase list copied.\nPlease paste it into KakaoTalk.",
+    orderFail:"Purchase inquiry failed: ", copyPrompt:"Please copy the text below.",
+    allBuyable:"Full deck currently available", missing:"Missing", composition:"Deck", currentBuy:"Available now",
+    addAvailable:"Add", addAtOnce:"available cards"
+  }
+};
+const T=k=>I18N[lang]?.[k]??I18N.ko[k]??k;
+
 
 const cardsEl = document.querySelector("#cards");
 const lastUpdatedEl = document.querySelector("#lastUpdated");
@@ -880,6 +964,8 @@ const drawerTotalEl = document.querySelector("#drawerTotal");
 const clearCartBtnEl = document.querySelector("#clearCartBtn");
 const drawerCopyBtnEl = document.querySelector("#drawerCopyBtn");
 const drawerKakaoBtnEl = document.querySelector("#drawerKakaoBtn");
+const langKoBtn=document.querySelector("#langKoBtn");
+const langEnBtn=document.querySelector("#langEnBtn");
 
 const won = n => "₩" + Number(n || 0).toLocaleString("ko-KR");
 const esc = s => String(s ?? "").replace(/[&<>"']/g, m => ({
@@ -891,6 +977,61 @@ const esc = s => String(s ?? "").replace(/[&<>"']/g, m => ({
 }[m]));
 
 
+
+
+function setSelectFirstText(el,text){
+  if(el?.options?.length)el.options[0].textContent=text;
+}
+function applyLanguage(){
+  document.documentElement.lang=lang;
+  localStorage.setItem("riftbound_lang",lang);
+  if(langKoBtn)langKoBtn.classList.toggle("active",lang==="ko");
+  if(langEnBtn)langEnBtn.classList.toggle("active",lang==="en");
+
+  const guideSummary=document.querySelector("#guideSummary");
+  const guideMain=document.querySelector("#guideMain");
+  const guideLine1=document.querySelector("#guideLine1");
+  const guideLine2=document.querySelector("#guideLine2");
+  if(storeNameEl)storeNameEl.textContent=T("store");
+  if(guideSummary)guideSummary.textContent=T("guide");
+  if(guideMain)guideMain.textContent=T("guideMain");
+  if(guideLine1)guideLine1.textContent=T("guide1");
+  if(guideLine2)guideLine2.textContent=T("guide2");
+  if(qEl)qEl.placeholder=T("search");
+  setSelectFirstText(rarityEl,T("rarity"));
+  setSelectFirstText(variantEl,T("variant"));
+
+  if(sortOrderEl){
+    const labels={default:"sortDefault",price_desc:"sortHigh",price_asc:"sortLow",card_no:"sortNo",sold_desc:"sortSold"};
+    [...sortOrderEl.options].forEach(o=>{if(labels[o.value])o.textContent=T(labels[o.value]);});
+  }
+
+  const el=(id)=>document.querySelector(id);
+  if(el("#deckShopTitle"))el("#deckShopTitle").textContent=T("deckTitle");
+  if(el("#cartHelpText"))el("#cartHelpText").textContent=T("cartHelp");
+  if(el("#cartDrawerTitle"))el("#cartDrawerTitle").textContent=T("cartTitle");
+  if(cartCloseBtnEl)cartCloseBtnEl.textContent=T("close");
+  if(clearCartBtnEl)clearCartBtnEl.textContent=T("emptyAll");
+  if(drawerCopyBtnEl)drawerCopyBtnEl.textContent=T("copyList");
+  if(drawerKakaoBtnEl)drawerKakaoBtnEl.textContent=T("kakaoShort");
+  if(copyBtnEl)copyBtnEl.textContent=T("copy");
+  if(kakaoBtnEl)kakaoBtnEl.textContent=T("kakao");
+  if(el("#footerText"))el("#footerText").textContent=T("footer");
+
+  render();
+  renderDeckShop();
+  updateLastUpdated();
+  updatePublicStockSummary();
+}
+function changeLanguage(next){
+  lang=next==="en"?"en":"ko";
+  const u=new URL(location.href);
+  if(lang==="en")u.searchParams.set("lang","en"); else u.searchParams.delete("lang");
+  history.replaceState({}, "", u);
+  applyLanguage();
+}
+langKoBtn?.addEventListener("click",()=>changeLanguage("ko"));
+langEnBtn?.addEventListener("click",()=>changeLanguage("en"));
 
 function isSignature(c){
   return String(c.variant||"").trim().toLowerCase()==="signature";
@@ -961,7 +1102,7 @@ function nextCardImage(img) {
 }
 
 async function load() {
-  cardsEl.innerHTML='<div class="empty">카드 목록 불러오는 중...</div>';
+  cardsEl.innerHTML=`<div class="empty">${T("loading")}</div>`;
 
   try {
     const data=await restGet(
@@ -1039,8 +1180,8 @@ async function load() {
       );
       const set=Array.isArray(settings)?settings[0]:null;
       if(set){
-        storeNameEl.textContent=set.store_name||C.STORE_NAME;
-        noticeEl.textContent=set.notice||"";
+        storeNameEl.textContent=lang==="en"?T("store"):(set.store_name||C.STORE_NAME);
+        noticeEl.textContent=lang==="en"?"Korean cards · Prices and stock are updated frequently.":(set.notice||"");
         if(set.kakao_openchat_url){
           C.KAKAO_OPENCHAT_URL=set.kakao_openchat_url;
         }
@@ -1119,9 +1260,9 @@ function filtered() {
 
 
 function formatUpdatedAt(v){
-  if(!v) return "업데이트 기록 없음";
+  if(!v) return T("noUpdate");
   const d=new Date(v);
-  if(Number.isNaN(d.getTime())) return "업데이트 기록 없음";
+  if(Number.isNaN(d.getTime())) return T("noUpdate");
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}.${p(d.getMonth()+1)}.${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
 }
@@ -1131,7 +1272,7 @@ function updateLastUpdated(){
     .map(c=>c.updated_at)
     .filter(Boolean)
     .sort((a,b)=>new Date(b)-new Date(a))[0];
-  lastUpdatedEl.textContent=`최종 업데이트 ${formatUpdatedAt(latest)}`;
+  lastUpdatedEl.textContent=`${T("updated")} ${formatUpdatedAt(latest)}`;
 }
 
 function updatePublicStockSummary(){
@@ -1150,9 +1291,9 @@ function updatePublicStockSummary(){
 
   const sold=Object.values(soldCounts).reduce((s,v)=>s+Math.max(0,Number(v||0)),0);
 
-  let text=`판매가능 ${available.toLocaleString()}장`;
-  if(manyKinds>0) text+=` + 재고많음 ${manyKinds}종`;
-  text+=` · 판매완료 ${sold.toLocaleString()}장`;
+  let text=`${T("available")} ${available.toLocaleString()} ${T("cards")}`;
+  if(manyKinds>0) text+=` + ${T("many")} ${manyKinds} ${T("kinds")}`;
+  text+=` · ${T("sold")} ${sold.toLocaleString()} ${T("cards")}`;
 
   publicStockSummaryEl.textContent=text;
 }
@@ -1227,31 +1368,31 @@ function renderDeckShop(){
   ).join("");
 
   if(deckPanelEl) deckPanelEl.classList.toggle("open",deckPanelOpen);
-  if(deckPanelToggleEl) deckPanelToggleEl.textContent=deckPanelOpen?"덱 닫기":"덱 보기";
+  if(deckPanelToggleEl) deckPanelToggleEl.textContent=deckPanelOpen?T("deckClose"):T("deckOpen");
 
   const d=deckBundles.find(x=>String(x.id)===String(selectedDeckId));
   if(!d){deckPreviewEl.innerHTML="";return}
 
   const calc=deckCalc(d);
   const missText=calc.missing.map(x=>
-    `${x.card_no||x.code} ${x.name_ko||""} ${x.finish||""} ×${x.missing_qty} 부족`
+    `${x.card_no||x.code} ${x.name_ko||""} ${x.finish||""} ×${x.missing_qty} ${T("missing")}`
   ).join("<br>");
 
   deckPreviewEl.innerHTML=`
     <div class="deck-preview-name">${esc(d.name)}</div>
     ${d.description?`<div class="deck-preview-desc">${esc(d.description)}</div>`:""}
     <div class="deck-preview-stats">
-      <span>구성 ${calc.required}장</span>
-      <span>현재 구매 ${calc.buyable}장</span>
+      <span>${T("composition")} ${calc.required} ${T("cards")}</span>
+      <span>${T("currentBuy")} ${calc.buyable} ${T("cards")}</span>
       <span>${won(calc.total)}</span>
     </div>
     ${deckGroupedHtml(d)}
     ${calc.missing.length
-      ? `<div class="deck-preview-missing"><b>부족 ${calc.required-calc.buyable}장</b><br>${missText}</div>`
-      : `<div class="deck-preview-ok">현재 전 구성 구매 가능</div>`
+      ? `<div class="deck-preview-missing"><b>${T("missing")} ${calc.required-calc.buyable} ${T("cards")}</b><br>${missText}</div>`
+      : `<div class="deck-preview-ok">${T("allBuyable")}</div>`
     }
     <button class="deck-add-btn" data-add-deck="${d.id}" ${calc.buyable<1?"disabled":""}>
-      가능한 카드 ${calc.buyable}장 한 번에 담기 · ${won(calc.total)}
+      ${T("addAvailable")} ${calc.buyable} ${T("addAtOnce")} · ${won(calc.total)}
     </button>
   `;
 }
@@ -1316,7 +1457,7 @@ function render() {
             ${imageHtml(c)}
             ${isCUFoil(c)?'<div class="foil-badge">FOIL</div>':""}
             ${isSignature(c)?'<div class="signature-badge">SIGNATURE</div>':""}
-            ${soldout ? '<div class="soldout-overlay">품절</div>' : ''}
+            ${soldout ? `<div class="soldout-overlay">${T("soldOut")}</div>` : ""}
             <div class="body">
               <div class="name">${esc(c.name_ko)}</div>
               <div class="meta">
@@ -1328,8 +1469,8 @@ function render() {
               <div class="price">${c.sell_price > 0 ? won(c.sell_price) : "-"}</div>
               ${
                 soldout
-                  ? `<div class="soldout-badge">품절${soldQtyFor(c)>0?` · 판매완료 ${soldQtyFor(c)}장`:""}</div>`
-                  : `<div class="stock">${isMany(c)?"재고많음":`판매가능 ${c.sell_qty}장`}${soldQtyFor(c)>0?` · 판매완료 ${soldQtyFor(c)}장`:""}</div>`
+                  ? `<div class="soldout-badge">${T("soldOut")}${soldQtyFor(c)>0?` · ${T("sold")} ${soldQtyFor(c)} ${T("cards")}`:""}</div>`
+                  : `<div class="stock">${isMany(c)?T("many"):`${T("available")} ${c.sell_qty} ${T("cards")}`}${soldQtyFor(c)>0?` · ${T("sold")} ${soldQtyFor(c)} ${T("cards")}`:""}</div>`
               }
 
               <div class="buyrow">
@@ -1341,7 +1482,7 @@ function render() {
           </article>
         `;
       }).join("")
-    : '<div class="empty">조건에 맞는 판매 카드가 없습니다.</div>';
+    : `<div class="empty">${T("noMatches")}</div>`;
 
   updateCart();
 }
@@ -1372,8 +1513,8 @@ function updateCart() {
   const qty = s.reduce((a, c) => a + c.buy_qty, 0);
   const sum = s.reduce((a, c) => a + c.buy_qty * c.sell_price, 0);
 
-  cartSummaryEl.textContent = `선택 ${qty}장 · ${won(sum)}`;
-  if (cartViewBtnEl) cartViewBtnEl.textContent = `구매목록 보기 (${qty})`;
+  cartSummaryEl.textContent = `${T("selected")} ${qty} ${T("cards")} · ${won(sum)}`;
+  if (cartViewBtnEl) cartViewBtnEl.textContent = `${T("viewCart")} (${qty})`;
   renderCartDrawer();
 }
 
@@ -1459,27 +1600,27 @@ function renderCartDrawer() {
   const normalQty=s.filter(c=>String(c.finish||"").toUpperCase()!=="FOIL").reduce((a,c)=>a+c.buy_qty,0);
   const foilQty=qty-normalQty;
 
-  drawerQtyEl.textContent = `총 ${qty}장 · 일반 ${normalQty} · FOIL ${foilQty}`;
+  drawerQtyEl.textContent = `${T("total")} ${qty} ${T("cards")} · ${T("normal")} ${normalQty} · FOIL ${foilQty}`;
   drawerTotalEl.textContent = won(sum);
 
   if (!s.length) {
-    cartListEl.innerHTML = '<div class="cart-empty">아직 선택한 카드가 없습니다.</div>';
+    cartListEl.innerHTML = `<div class="cart-empty">${T("emptyCart")}</div>`;
     return;
   }
 
   const g=groupedSelectedCards(s);
   const normalHtml=g.normal.length
     ? `<div class="cart-group">
-        <div class="cart-group-head"><span>일반 카드</span><span>${normalQty}장</span></div>
+        <div class="cart-group-head"><span>${T("normalCards")}</span><span>${normalQty} ${T("cards")}</span></div>
         ${g.normal.map(cartItemHtml).join("")}
       </div>`
     : "";
 
   const foilHtml=foilQty
     ? `<div class="cart-group">
-        <div class="cart-group-head"><span>FOIL</span><span>${foilQty}장</span></div>
+        <div class="cart-group-head"><span>FOIL</span><span>${foilQty} ${T("cards")}</span></div>
         ${g.foilKeys.map(key=>`
-          <div class="cart-subgroup-head">${esc(key)} · ${g.foilGroups[key].reduce((a,c)=>a+c.buy_qty,0)}장</div>
+          <div class="cart-subgroup-head">${esc(key)} · ${g.foilGroups[key].reduce((a,c)=>a+c.buy_qty,0)} ${T("cards")}</div>
           ${g.foilGroups[key].map(cartItemHtml).join("")}
         `).join("")}
       </div>`
@@ -1497,16 +1638,17 @@ function orderText(orderId=null) {
   const g=groupedSelectedCards(s);
   const normalQty=g.normal.reduce((a,c)=>a+c.buy_qty,0);
   const foilQty=qty-normalQty;
+  const unit=lang==="en"?"cards":"장";
 
   const lines=[
-    "[리프트바운드 오리진 구매 문의]",
-    ...(orderId ? [`문의번호 #${String(orderId).padStart(6,"0")}`] : []),
-    `총 ${qty}장 · 일반 ${normalQty}장 · FOIL ${foilQty}장 / ${won(sum)}`,
+    T("inquiry"),
+    ...(orderId ? [`${T("orderNo")} #${String(orderId).padStart(6,"0")}`] : []),
+    `${T("total")} ${qty} ${unit} · ${T("normal")} ${normalQty} ${unit} · FOIL ${foilQty} ${unit} / ${won(sum)}`,
     ""
   ];
 
   if(g.normal.length){
-    lines.push(`[일반 카드 · ${normalQty}장]`);
+    lines.push(`[${T("normalCards")} · ${normalQty} ${unit}]`);
     for(const c of g.normal){
       lines.push(`${c.card_no} ${c.name_ko} ×${c.buy_qty} — ${won(c.sell_price*c.buy_qty)}`);
     }
@@ -1514,11 +1656,11 @@ function orderText(orderId=null) {
   }
 
   if(foilQty){
-    lines.push(`[FOIL · ${foilQty}장]`);
+    lines.push(`[FOIL · ${foilQty} ${unit}]`);
     for(const key of g.foilKeys){
       const list=g.foilGroups[key];
       const subQty=list.reduce((a,c)=>a+c.buy_qty,0);
-      lines.push(`<${key} · ${subQty}장>`);
+      lines.push(`<${key} · ${subQty} ${unit}>`);
       for(const c of list){
         lines.push(`${c.card_no} ${c.name_ko} ×${c.buy_qty} — ${won(c.sell_price*c.buy_qty)}`);
       }
@@ -1526,7 +1668,7 @@ function orderText(orderId=null) {
     }
   }
 
-  lines.push(`총 ${qty}장 / ${won(sum)}`);
+  lines.push(`${T("total")} ${qty} ${unit} / ${won(sum)}`);
   return lines.join("\n");
 }
 
@@ -1549,11 +1691,11 @@ function pendingOrderItems(){
 async function kakaoInquiry(){
   const items=pendingOrderItems();
   if(!items.length){
-    alert("카드를 선택해 주세요.");
+    alert(T("selectCard"));
     return;
   }
   if(!C.KAKAO_OPENCHAT_URL || C.KAKAO_OPENCHAT_URL.includes("YOUR_LINK")){
-    alert("카카오 오픈채팅 주소가 아직 설정되지 않았습니다.");
+    alert(T("kakaoMissing"));
     return;
   }
 
@@ -1580,13 +1722,13 @@ async function kakaoInquiry(){
       prompt("구매목록을 복사해 주세요.",t);
     }
 
-    alert(`문의번호 #${String(orderId).padStart(6,"0")} 등록 완료\n구매목록을 복사했습니다.\n카카오톡에서 붙여넣어 보내주세요.`);
+    alert(`${T("orderNo")} #${String(orderId).padStart(6,"0")} ${T("orderDone")}`);
 
     if(popup) popup.location.href=C.KAKAO_OPENCHAT_URL;
     else window.location.href=C.KAKAO_OPENCHAT_URL;
   }catch(err){
     if(popup) popup.close();
-    alert("구매문의 등록 실패: "+(err?.message||err));
+    alert(T("orderFail")+(err?.message||err));
   }
 }
 
@@ -1599,9 +1741,9 @@ copyBtnEl.addEventListener("click", async () => {
 
   try {
     await navigator.clipboard.writeText(t);
-    alert("구매목록을 복사했습니다.");
+    alert(T("copied"));
   } catch {
-    prompt("아래 내용을 길게 눌러 복사해 주세요.", t);
+    prompt(T("copyPrompt"), t);
   }
 });
 
@@ -1664,6 +1806,7 @@ variantEl.addEventListener("change", render);
 finishEl.addEventListener("change", render);
 
 if(sortOrderEl) sortOrderEl.addEventListener("change",render);
+applyLanguage();
 load();
 </script>
 </body>
