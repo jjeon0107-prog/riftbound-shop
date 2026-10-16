@@ -540,6 +540,24 @@ body.cart-open{
   .lang-switch button{padding:4px 6px;font-size:9.5px}
 }
 
+
+/* v30 English card names */
+.name-en{
+  display:block;
+  margin-top:2px;
+  font-size:10px;
+  line-height:1.2;
+  font-weight:650;
+  color:var(--muted);
+}
+.cart-name-en{
+  display:block;
+  margin-top:1px;
+  font-size:9px;
+  line-height:1.2;
+  color:var(--muted);
+}
+
 </style>
 
 
@@ -778,7 +796,7 @@ body.cart-open{
   </div>
   <div style="height:90px"></div>
   <div class="sub" style="text-align:center;padding:12px 0 90px">
-    <span style="opacity:.45">build v29 EN-GUIDE</span><br>
+    <span style="opacity:.45">build v30 EN-NAMES</span><br>
     <span id="footerText">카드 이미지 © Riot Games · 비공식 개인 판매 페이지</span>
   </div>
 </main>
@@ -883,6 +901,7 @@ let deckBundles = [];
 let selectedDeckId = null;
 let deckPanelOpen = false;
 let cart = {};
+let englishNames={};
 let lang=(new URLSearchParams(location.search).get("lang")||localStorage.getItem("riftbound_lang")||"ko").toLowerCase()==="en"?"en":"ko";
 
 const I18N={
@@ -1042,6 +1061,34 @@ function changeLanguage(next){
 }
 langKoBtn?.addEventListener("click",()=>changeLanguage("ko"));
 langEnBtn?.addEventListener("click",()=>changeLanguage("en"));
+
+
+function cardNameKey(c){
+  const raw=String(c?.card_no||c?.code||"");
+  const m=raw.match(/OGN-(\d{3}[a-z]?|\d{3}\*)/i);
+  return m?m[1].toLowerCase():"";
+}
+function englishName(c){
+  return englishNames[cardNameKey(c)]||"";
+}
+function displayNameHtml(c){
+  const en=englishName(c);
+  return `${esc(c.name_ko||"")}${lang==="en"&&en?`<span class="name-en">${esc(en)}</span>`:""}`;
+}
+function orderDisplayName(c){
+  const en=englishName(c);
+  return lang==="en"&&en ? `${c.name_ko} (${en})` : c.name_ko;
+}
+async function loadEnglishNames(){
+  try{
+    const r=await fetch("ogn-en-names.json?v=20261016-1",{cache:"no-store"});
+    if(!r.ok)throw new Error(`HTTP ${r.status}`);
+    englishNames=await r.json();
+  }catch(e){
+    console.warn("English card names load failed:",e);
+    englishNames={};
+  }
+}
 
 function isSignature(c){
   return String(c.variant||"").trim().toLowerCase()==="signature";
@@ -1231,7 +1278,7 @@ function filtered() {
   const s = qEl.value.trim().toLowerCase();
 
   const list = cards.filter(c =>
-    (!s || `${c.name_ko} ${c.card_no}`.toLowerCase().includes(s)) &&
+    (!s || `${c.name_ko} ${englishName(c)} ${c.card_no}`.toLowerCase().includes(s)) &&
     (!rarityEl.value || c.rarity === rarityEl.value) &&
     (!variantEl.value || c.variant === variantEl.value) &&
     (!finishEl.value || c.finish === finishEl.value)
@@ -1334,7 +1381,7 @@ function deckGroupedHtml(d){
       return `<div class="deck-section-public">
         <div class="deck-section-public-title">${DECK_SECTION_LABELS[section]} · ${qty}장</div>
         <div class="deck-section-public-items">
-          ${list.map(x=>`<span class="deck-section-public-item"><b>${esc(x.name_ko||x.card_no||x.code)}</b> ×${Number(x.qty||0)}</span>`).join("")}
+          ${list.map(x=>{const c=cards.find(v=>v.code===x.code)||x; const en=englishName(c); return `<span class="deck-section-public-item"><b>${esc(x.name_ko||x.card_no||x.code)}</b>${lang==="en"&&en?` <span class="name-en">${esc(en)}</span>`:""} ×${Number(x.qty||0)}</span>`;}).join("")}
         </div>
       </div>`;
     }).join("")
@@ -1469,7 +1516,7 @@ function render() {
             ${isSignature(c)?'<div class="signature-badge">SIGNATURE</div>':""}
             ${soldout ? `<div class="soldout-overlay">${T("soldOut")}</div>` : ""}
             <div class="body">
-              <div class="name">${esc(c.name_ko)}</div>
+              <div class="name">${displayNameHtml(c)}</div>
               <div class="meta">
                 ${esc(c.card_no)} ·
                 ${esc(c.rarity || "")} ·
@@ -1589,7 +1636,7 @@ function cartItemHtml(c){
     <div class="cart-item" data-code="${esc(c.code)}">
       ${thumb}
       <div class="cart-info">
-        <div class="cart-name">${esc(c.name_ko)}</div>
+        <div class="cart-name">${esc(c.name_ko)}${lang==="en"&&englishName(c)?`<span class="cart-name-en">${esc(englishName(c))}</span>`:""}</div>
         <div class="cart-meta">${esc(c.card_no)} · ${esc(c.rarity||"")} · ${esc(c.variant||"Standard")} · ${esc(c.finish)}</div>
         <div class="cart-price">${won(c.sell_price)} × ${c.buy_qty} = ${won(c.sell_price*c.buy_qty)}</div>
       </div>
@@ -1660,7 +1707,7 @@ function orderText(orderId=null) {
   if(g.normal.length){
     lines.push(`[${T("normalCards")} · ${normalQty} ${unit}]`);
     for(const c of g.normal){
-      lines.push(`${c.card_no} ${c.name_ko} ×${c.buy_qty} — ${won(c.sell_price*c.buy_qty)}`);
+      lines.push(`${c.card_no} ${orderDisplayName(c)} ×${c.buy_qty} — ${won(c.sell_price*c.buy_qty)}`);
     }
     lines.push("");
   }
@@ -1672,7 +1719,7 @@ function orderText(orderId=null) {
       const subQty=list.reduce((a,c)=>a+c.buy_qty,0);
       lines.push(`<${key} · ${subQty} ${unit}>`);
       for(const c of list){
-        lines.push(`${c.card_no} ${c.name_ko} ×${c.buy_qty} — ${won(c.sell_price*c.buy_qty)}`);
+        lines.push(`${c.card_no} ${orderDisplayName(c)} ×${c.buy_qty} — ${won(c.sell_price*c.buy_qty)}`);
       }
       lines.push("");
     }
@@ -1690,6 +1737,7 @@ function pendingOrderItems(){
     unit_price:Number(c.sell_price||0),
     line_total:Number(c.sell_price||0)*Number(c.buy_qty||0),
     name_ko:c.name_ko||"",
+    name_en:englishName(c)||"",
     card_no:c.card_no||"",
     finish:c.finish||"",
     rarity:c.rarity||"",
@@ -1816,8 +1864,7 @@ variantEl.addEventListener("change", render);
 finishEl.addEventListener("change", render);
 
 if(sortOrderEl) sortOrderEl.addEventListener("change",render);
-applyLanguage();
-load();
+loadEnglishNames().finally(()=>{ applyLanguage(); load(); });
 </script>
 </body>
 </html>
