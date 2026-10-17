@@ -274,6 +274,20 @@ h1{font-size:17px;margin:0 0 5px}
 }
 
 
+.promo-badge{
+  position:absolute;
+  top:7px;
+  right:7px;
+  z-index:8;
+  padding:4px 8px;
+  border-radius:7px;
+  background:#111827;
+  color:#fff;
+  font-size:9px;
+  font-weight:950;
+  letter-spacing:.06em;
+  box-shadow:0 1px 5px rgba(0,0,0,.25);
+}
 .signature-badge{
   position:absolute;
   top:7px;
@@ -1053,6 +1067,7 @@ onclick="const p=document.getElementById('managePanel');const opening=!p.classLi
             <option>Overnumber</option>
             <option>KR Overnumber</option>
             <option>Signature</option>
+            <option>Promo</option>
           </select>
           <select id="finish">
             <option value="">전체 피니시</option>
@@ -1156,7 +1171,7 @@ onclick="const p=document.getElementById('managePanel');const opening=!p.classLi
   <div id="listWrap" class="list-wrap">
     <table class="list-table">
       <thead><tr>
-        <th>번호</th><th>카드명</th><th>피니시</th><th>마지막 1장 판매</th>
+        <th>번호</th><th>카드명</th><th>유형</th><th>피니시</th><th>마지막 1장 판매</th>
         <th>전체수량</th><th>판매가</th><th>북미가</th><th>보유가치</th>
       </tr></thead>
       <tbody id="listBody"></tbody>
@@ -1171,7 +1186,7 @@ onclick="const p=document.getElementById('managePanel');const opening=!p.classLi
     <div class="deck-modal-head">
       <div>
         <div class="deck-modal-title">추천 덱 관리</div>
-        <div class="sub">판매페이지에서 한 번에 담을 덱/덱소스를 등록합니다. · v29</div>
+        <div class="sub">판매페이지에서 한 번에 담을 덱/덱소스를 등록합니다. · v34</div>
       </div>
       <button id="closeDeckManagerBtn">닫기</button>
     </div>
@@ -1372,6 +1387,9 @@ const sv=c=>saleQty(c)*Number(c.sell_price||0);
 function isSignature(c){
   return String(c.variant||"").trim().toLowerCase()==="signature";
 }
+function isPromo(c){
+  return String(c.variant||"").trim().toLowerCase()==="promo";
+}
 
 function isCUFoil(c){
   return isCU(c) && String(c.finish||"").toUpperCase()==="FOIL";
@@ -1570,6 +1588,7 @@ async function loadCards(){
   original=Object.fromEntries(cards.map(c=>[c.code,JSON.parse(JSON.stringify(c))]));
   dirty.clear();
   buildRarity();
+  buildVariant();
   render();
 }
 async function loadSettings(){
@@ -1596,6 +1615,15 @@ function buildRarity(){
   s.innerHTML='<option value="">전체 레어도</option>';
   [...new Set(cards.map(c=>c.rarity).filter(Boolean))].sort().forEach(x=>s.insertAdjacentHTML("beforeend",`<option>${esc(x)}</option>`));
   s.value=cur;
+}
+function buildVariant(){
+  const s=$("#variant"),cur=s.value;
+  const preferred=["Standard","Alt Art","Overnumber","KR Overnumber","Signature","Promo"];
+  const vals=[...new Set(cards.map(c=>String(c.variant||"").trim()).filter(Boolean))];
+  const ordered=[...preferred.filter(x=>vals.includes(x)),...vals.filter(x=>!preferred.includes(x)).sort()];
+  s.innerHTML='<option value="">전체 유형</option>';
+  ordered.forEach(x=>s.insertAdjacentHTML("beforeend",`<option>${esc(x)}</option>`));
+  s.value=ordered.includes(cur)?cur:"";
 }
 function filtered(){
   const q=$("#q").value.trim().toLowerCase(),r=$("#rarity").value,o=$("#own").value,v=$("#variant").value,f=$("#finish").value;
@@ -1636,7 +1664,7 @@ function render(){
     <article class="card ${dirty.has(c.code)?"dirty":""} ${(!isMany(c)&&Number(c.total_qty||0)<1)?"missing":""}" data-code="${esc(c.code)}">
       ${ih(c)}
       ${isCUFoil(c)?'<div class="foil-badge">FOIL</div>':""}
-      ${isSignature(c)?'<div class="signature-badge">SIGNATURE</div>':""}
+      ${isPromo(c)?'<div class="promo-badge">PROMO</div>':isSignature(c)?'<div class="signature-badge">SIGNATURE</div>':""}
       <div class="body">
         <div class="name">${esc(c.name_ko)}</div>
         <div class="meta">${esc(c.card_no)} · ${esc(c.rarity||"")} · ${esc(c.variant||"Standard")} · ${esc(c.finish)}</div>
@@ -1662,6 +1690,7 @@ function render(){
     <tr class="${dirty.has(c.code)?"dirty":""} ${(!isMany(c)&&Number(c.total_qty||0)<1)?"missing":""}" data-code="${esc(c.code)}">
       <td>${esc(c.card_no)}</td>
       <td class="list-name">${esc(c.name_ko)}</td>
+      <td>${isPromo(c)?'<b>PROMO</b>':esc(c.variant||"Standard")}</td>
       <td>${esc(c.finish)}</td>
       <td><input class="l-sale" type="checkbox" ${c.sale_enabled?"checked":""}></td>
       <td>
@@ -1674,7 +1703,7 @@ function render(){
       <td><input class="l-price" type="number" step=".1" min="0" value="${k2u(c.sell_price)}"></td>
       <td>${won(naKrw(c))}</td>
       <td>${won(cv(c))}</td>
-    </tr>`).join(""):'<tr><td colspan="8">조건에 맞는 카드가 없어.</td></tr>';
+    </tr>`).join(""):'<tr><td colspan="9">조건에 맞는 카드가 없어.</td></tr>';
 
   applyViewMode();
 }
