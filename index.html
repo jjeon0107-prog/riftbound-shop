@@ -810,7 +810,7 @@ body.cart-open{
   </div>
   <div style="height:90px"></div>
   <div class="sub" style="text-align:center;padding:12px 0 90px">
-    <span style="opacity:.45">build v33 PROMO-POPULAR</span><br>
+    <span style="opacity:.45">build v34 PROMO-NAME</span><br>
     <span id="footerText">카드 이미지 © Riot Games · 비공식 개인 판매 페이지</span>
   </div>
 </main>
@@ -1083,7 +1083,8 @@ function cardNameKey(c){
   return m?m[1].toLowerCase():"";
 }
 function englishName(c){
-  if(String(c?.code||"")==="PRM-FLASH-010-NORMAL") return "Flash";
+  if(String(c?.code||"")==="PRM-FLASH-010-NORMAL") return "Flash (Sealed)";
+  if(String(c?.code||"")==="PRM-JINX-030-FOIL") return "Jinx, Demolitionist (Sealed)";
   return englishNames[cardNameKey(c)]||"";
 }
 function displayNameHtml(c){
@@ -1528,7 +1529,7 @@ function render() {
           <article class="card ${soldout ? "soldout" : ""}">
             ${imageHtml(c)}
             ${isCUFoil(c)?'<div class="foil-badge">FOIL</div>':""}
-            ${String(c.variant||"").toLowerCase().includes("promo")?`<div class="promo-badge">${lang==="en"?"SEALED PROMO":"미개봉 PROMO"}</div>`:isSignature(c)?'<div class="signature-badge">SIGNATURE</div>':""}
+            ${String(c.variant||"").toLowerCase()==="promo"?'<div class="promo-badge">PROMO</div>':isSignature(c)?'<div class="signature-badge">SIGNATURE</div>':""}
             ${soldout ? `<div class="soldout-overlay">${T("soldOut")}</div>` : ""}
             <div class="body">
               <div class="name">${displayNameHtml(c)}</div>
