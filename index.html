@@ -320,7 +320,7 @@ body.cart-open{
 }
 .compact-toolbar{
   display:grid!important;
-  grid-template-columns:minmax(0,2fr) repeat(4,minmax(0,1fr));
+  grid-template-columns:minmax(0,2fr) repeat(5,minmax(0,1fr));
   gap:5px!important;
   margin:0!important;
 }
@@ -374,12 +374,43 @@ body.cart-open{
 }
 
 
-/* Optional stock-only view, default OFF so sold-out cards remain visible. */
-.compact-status{display:flex;align-items:center;gap:10px;overflow:visible}
-.compact-status #notice{flex:1 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.available-only-toggle{display:inline-flex;align-items:center;gap:5px;flex:0 0 auto;cursor:pointer;white-space:nowrap;font-weight:750;color:#28354c;font-size:11px}
-.available-only-toggle input{width:15px;height:15px;margin:0;accent-color:#2563eb;cursor:pointer}
-@media(max-width:800px){.available-only-toggle{font-size:10px;gap:4px}}
+/* Stock filter sits alongside other filters; unchecked by default. */
+.compact-toolbar .available-only-toggle{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:5px;
+  min-width:0;
+  height:34px;
+  box-sizing:border-box;
+  border:1px solid var(--line);
+  border-radius:8px;
+  background:#fff;
+  padding:0 5px;
+  cursor:pointer;
+  white-space:nowrap;
+  font-size:11px;
+  font-weight:750;
+  color:#28354c;
+}
+.compact-toolbar .available-only-toggle input{
+  width:15px;
+  height:15px!important;
+  min-height:15px!important;
+  padding:0!important;
+  margin:0;
+  flex:0 0 15px;
+  accent-color:#2563eb;
+  cursor:pointer;
+}
+@media(max-width:800px){
+  .compact-toolbar .available-only-toggle{
+    grid-column:span 2;
+    height:32px;
+    gap:5px;
+    font-size:10.5px;
+  }
+}
 /* v22 deck bundle quick-add */
 .deck-shop{
   margin:7px 0 10px;
@@ -771,7 +802,6 @@ body.cart-open{
 
     <div class="compact-status">
       <span id="notice">전체 카드 표시 · 0장은 품절</span>
-      <label class="available-only-toggle"><input id="availableOnly" type="checkbox"><span id="availableOnlyText">판매중만 보기</span></label>
     </div>
 
     <div class="toolbar compact-toolbar">
@@ -790,6 +820,7 @@ body.cart-open{
         <option value="card_no">카드번호순</option>
         <option value="sold_desc" selected>인기카드순</option>
       </select>
+      <label class="available-only-toggle"><input id="availableOnly" type="checkbox"><span id="availableOnlyText">판매중만 보기</span></label>
     </div>
   </div>
 </header>
