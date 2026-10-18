@@ -18,6 +18,7 @@ h1{font-size:17px;margin:0 0 5px}
 .panel{padding:8px;margin-bottom:8px}
 .topline{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:5px;align-items:center}
 .topline input,.topline button,.panel input,.panel select,.panel button{border:1px solid var(--line);background:#fff;border-radius:8px;padding:7px;font-size:11px;min-width:0}
+.promo-quick-active{background:#111827!important;color:#fff!important;border-color:#111827!important}
 .total-chip{padding:7px 9px;background:#fff;border:1px solid var(--line);border-radius:8px;font-size:11px;font-weight:800;white-space:nowrap}
 .manage-panel{display:none;margin-top:6px}
 .manage-panel.open{display:block}
@@ -990,6 +991,9 @@ body.orders-open{overflow:hidden!important}
   .deck-selected-items{max-height:none}
 }
 
+
+.promo-card{outline:2px solid #111827;outline-offset:-2px}
+#promoQuickBtn{white-space:nowrap;font-weight:900}
 </style>
 </head>
 <body>
@@ -1036,6 +1040,7 @@ body.orders-open{overflow:hidden!important}
     <div id="adminTop" class="hidden">
       <div class="topline">
         <input id="q" placeholder="카드명 / 번호 검색">
+        <button id="promoQuickBtn" type="button" title="프로모 카드만 보기">PROMO 관리</button>
         <button id="manageToggle"
 onclick="const p=document.getElementById('managePanel');const opening=!p.classList.contains('open');p.classList.toggle('open',opening);p.classList.toggle('hidden',!opening);this.textContent=opening?'관리 메뉴 닫기':'관리 메뉴 열기';return false;">
 관리 메뉴 열기
@@ -1589,6 +1594,7 @@ async function loadCards(){
   dirty.clear();
   buildRarity();
   buildVariant();
+  updatePromoQuickLabel();
   render();
 }
 async function loadSettings(){
@@ -1625,6 +1631,20 @@ function buildVariant(){
   ordered.forEach(x=>s.insertAdjacentHTML("beforeend",`<option>${esc(x)}</option>`));
   s.value=ordered.includes(cur)?cur:"";
 }
+
+function updatePromoQuickLabel(){
+  const n=cards.filter(isPromo).length;
+  const b=$("#promoQuickBtn");
+  if(b)b.textContent=`PROMO 관리 (${n})`;
+}
+$("#promoQuickBtn").onclick=()=>{
+  const s=$("#variant");
+  const active=s.value==="Promo";
+  s.value=active?"":"Promo";
+  $("#promoQuickBtn").classList.toggle("promo-quick-active",!active);
+  render();
+};
+
 function filtered(){
   const q=$("#q").value.trim().toLowerCase(),r=$("#rarity").value,o=$("#own").value,v=$("#variant").value,f=$("#finish").value;
   let a=cards.filter(c=>{
@@ -1642,7 +1662,11 @@ function filtered(){
   if(s==="priceDesc")a.sort((x,y)=>Number(y.sell_price)-Number(x.sell_price));
   else if(s==="priceAsc")a.sort((x,y)=>Number(x.sell_price)-Number(y.sell_price));
   else if(s==="name")a.sort((x,y)=>String(x.name_ko).localeCompare(String(y.name_ko),"ko"));
-  else a.sort((x,y)=>Number(x.sort_no||9999)-Number(y.sort_no||9999));
+  else a.sort((x,y)=>{
+    const xp=isPromo(x)?0:1, yp=isPromo(y)?0:1;
+    if(xp!==yp)return xp-yp;
+    return Number(x.sort_no||9999)-Number(y.sort_no||9999);
+  });
   return a;
 }
 function stats(a){
@@ -1661,7 +1685,7 @@ function render(){
   stats(a);
 
   $("#cards").innerHTML=a.length?a.map(c=>`
-    <article class="card ${dirty.has(c.code)?"dirty":""} ${(!isMany(c)&&Number(c.total_qty||0)<1)?"missing":""}" data-code="${esc(c.code)}">
+    <article class="card ${dirty.has(c.code)?"dirty":""} ${isPromo(c)?"promo-card":""} ${(!isMany(c)&&Number(c.total_qty||0)<1)?"missing":""}" data-code="${esc(c.code)}">
       ${ih(c)}
       ${isCUFoil(c)?'<div class="foil-badge">FOIL</div>':""}
       ${isPromo(c)?'<div class="promo-badge">PROMO</div>':isSignature(c)?'<div class="signature-badge">SIGNATURE</div>':""}
