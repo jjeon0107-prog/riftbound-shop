@@ -1039,7 +1039,7 @@ body.orders-open{overflow:hidden!important}
 
     <div id="adminTop" class="hidden">
       <div class="topline">
-        <input id="q" placeholder="카드명 / 번호 검색">
+        <input id="q" placeholder="카드명 / 번호 / 유형 검색">
         <button id="promoQuickBtn" type="button" title="프로모 카드만 보기">PROMO 관리</button>
         <button id="manageToggle"
 onclick="const p=document.getElementById('managePanel');const opening=!p.classList.contains('open');p.classList.toggle('open',opening);p.classList.toggle('hidden',!opening);this.textContent=opening?'관리 메뉴 닫기':'관리 메뉴 열기';return false;">
@@ -1648,7 +1648,7 @@ $("#promoQuickBtn").onclick=()=>{
 function filtered(){
   const q=$("#q").value.trim().toLowerCase(),r=$("#rarity").value,o=$("#own").value,v=$("#variant").value,f=$("#finish").value;
   let a=cards.filter(c=>{
-    if(q&&!(`${c.name_ko} ${c.card_no}`.toLowerCase().includes(q)))return false;
+    if(q&&!(`${c.name_ko} ${c.card_no} ${c.code} ${c.variant||""} ${c.finish||""}`.toLowerCase().includes(q)))return false;
     if(r&&c.rarity!==r)return false;
     if(o==="owned"&&!isMany(c)&&Number(c.total_qty||0)<1)return false;
     if(o==="missing"&&(isMany(c)||Number(c.total_qty||0)>0))return false;
@@ -2806,6 +2806,7 @@ $("#bulkUndo").onclick=async()=>{
 };
 
 ["q","rarity","own","variant","finish","sort"].forEach(id=>$("#"+id).addEventListener(id==="q"?"input":"change",render));
+$("#variant").addEventListener("change",()=>$("#promoQuickBtn").classList.toggle("promo-quick-active",$("#variant").value==="Promo"));
 
 
 document.addEventListener("input",e=>{
