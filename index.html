@@ -539,6 +539,35 @@ body.cart-open{
 }
 
 
+/* v37: in-stock spotlight and completed-sales social proof */
+.shop-proof{font-weight:950!important;color:#111827!important;font-size:11px}
+.shop-status-strip .last-updated{font-weight:600!important;color:#64748b!important;font-size:10px}
+.featured-shop{border:1px solid #dce4f0;border-radius:12px;padding:10px 11px;margin:7px 0 9px;background:linear-gradient(135deg,#ffffff,#f6f8ff)}
+.featured-shop[hidden]{display:none!important}
+.featured-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}
+.featured-title{font-size:14px;font-weight:950;color:#17243d}
+.featured-desc{font-size:10px;color:#64748b}
+.featured-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
+.featured-item{min-width:0;display:flex;flex-direction:column;gap:4px;border:1px solid #e2e8f0;border-radius:9px;padding:7px;text-align:left;background:#fff;cursor:pointer;overflow:hidden}
+.featured-item:hover{border-color:#64748b;transform:translateY(-1px)}
+.featured-item:focus-visible{outline:2px solid #2563eb;outline-offset:2px}
+.featured-item .img{display:block;width:100%;aspect-ratio:5/7;height:auto;object-fit:cover;border-radius:5px;background:#eceff4}
+.featured-item-title{width:100%;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;font-weight:850}
+.featured-item-price{font-size:13px;font-weight:950;color:#0f172a}
+.featured-item-tag{font-size:9.5px;font-weight:750;color:#64748b}
+.featured-item .name-en{display:none}
+#cards{scroll-margin-top:160px}
+@media(max-width:800px){
+  .shop-proof{font-size:10px}
+  .featured-shop{margin:6px 0 7px;padding:8px}
+  .featured-title{font-size:12px}
+  .featured-desc{font-size:9px}
+  .featured-grid{display:grid;grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:minmax(124px,39%);overflow-x:auto;gap:7px;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;padding:0 1px 5px}
+  .featured-item{scroll-snap-align:start;padding:6px}
+  .featured-item-title{font-size:10.5px}
+  .featured-item-price{font-size:12px}
+  #cards{scroll-margin-top:220px}
+}
 /* v27 grouped buyer cart */
 .cart-group{margin:4px 0 10px}
 .cart-group-head{
@@ -820,17 +849,25 @@ body.cart-open{
         <option value="card_no">카드번호순</option>
         <option value="sold_desc" selected>인기카드순</option>
       </select>
-      <label class="available-only-toggle"><input id="availableOnly" type="checkbox"><span id="availableOnlyText">판매중만 보기</span></label>
+      <label class="available-only-toggle"><input id="availableOnly" type="checkbox" checked><span id="availableOnlyText">판매중만 보기</span></label>
     </div>
   </div>
 </header>
 
 <main class="wrap">
   <div class="shop-status-strip">
-    <span id="lastUpdated" class="last-updated">최종 업데이트 확인 중...</span>
+    <span id="publicStockSummary" class="shop-proof">판매 현황 계산 중...</span>
     <span class="shop-status-dot">·</span>
-    <span id="publicStockSummary">판매 현황 계산 중...</span>
+    <span id="lastUpdated" class="last-updated">최종 업데이트 확인 중...</span>
   </div>
+
+  <section id="featuredShop" class="featured-shop" hidden>
+    <div class="featured-head">
+      <div id="featuredTitle" class="featured-title">✨ 지금 구매 가능한 주목할 카드</div>
+      <span id="featuredDesc" class="featured-desc">카드를 누르면 상세 목록으로 이동</span>
+    </div>
+    <div id="featuredCards" class="featured-grid"></div>
+  </section>
 
   <section id="deckShop" class="deck-shop compact-deck-shop">
     <div class="deck-shop-head compact-deck-head">
@@ -966,6 +1003,7 @@ const I18N={
     guide4:"",
     search:"카드명 / 번호 검색", rarity:"전체 레어도", variant:"전체 유형",
     sortDefault:"기본순", sortHigh:"구매가격 높은순", sortLow:"구매가격 낮은순", sortNo:"카드번호순", sortSold:"인기카드순", availableOnly:"판매중만 보기",
+    inStockKinds:"판매중", cumulativeSold:"누적 판매완료", featuredTitle:"✨ 지금 구매 가능한 주목할 카드", featuredDesc:"카드를 누르면 해당 상품으로 이동",
     updated:"최종 업데이트", noUpdate:"업데이트 기록 없음", salesCalc:"판매 현황 계산 중...",
     available:"판매가능", many:"재고많음", sold:"판매완료", kinds:"종", cards:"장",
     deckTitle:"🧩 추천 덱", deckOpen:"덱 보기", deckClose:"덱 닫기",
@@ -992,6 +1030,7 @@ const I18N={
     guide4:"• Once your final card list is confirmed, I can create a listing on Global Bunjang for payment and international shipping.",
     search:"Search card name / number", rarity:"All rarities", variant:"All variants",
     sortDefault:"Default", sortHigh:"Price: High to Low", sortLow:"Price: Low to High", sortNo:"Card Number", sortSold:"Popular", availableOnly:"Available only",
+    inStockKinds:"In stock", cumulativeSold:"Sold to date", featuredTitle:"✨ Available featured cards", featuredDesc:"Tap a card to see its listing",
     updated:"Last updated", noUpdate:"No update record", salesCalc:"Calculating stock...",
     available:"Available", many:"In stock", sold:"Sold", kinds:"types", cards:"cards",
     deckTitle:"🧩 Recommended Decks", deckOpen:"View Deck", deckClose:"Close Deck",
@@ -1024,6 +1063,10 @@ const variantEl = document.querySelector("#variant");
 const finishEl = document.querySelector("#finish");
 const sortOrderEl = document.querySelector("#sortOrder");
 const availableOnlyEl = document.querySelector("#availableOnly");
+const featuredShopEl = document.querySelector("#featuredShop");
+const featuredCardsEl = document.querySelector("#featuredCards");
+let preSearchAvailableOnly = true;
+let wasSearching = false;
 const cartSummaryEl = document.querySelector("#cartSummary");
 const copyBtnEl = document.querySelector("#copyBtn");
 const kakaoBtnEl = document.querySelector("#kakaoBtn");
@@ -1081,6 +1124,8 @@ function applyLanguage(){
   if(guideLine4){guideLine4.textContent=T("guide4");guideLine4.style.display=T("guide4")?"block":"none";}
   if(qEl)qEl.placeholder=T("search");
   if(document.querySelector("#availableOnlyText")) document.querySelector("#availableOnlyText").textContent=T("availableOnly");
+  if(document.querySelector("#featuredTitle")) document.querySelector("#featuredTitle").textContent=T("featuredTitle");
+  if(document.querySelector("#featuredDesc")) document.querySelector("#featuredDesc").textContent=T("featuredDesc");
   setSelectFirstText(rarityEl,T("rarity"));
   setSelectFirstText(variantEl,T("variant"));
 
@@ -1330,6 +1375,10 @@ function buildFilters() {
     ));
 }
 
+function isInStock(c){
+  return Boolean(c.stock_many) || Number(c.sell_qty||0)>0;
+}
+
 function filtered() {
   const s = qEl.value.trim().toLowerCase();
 
@@ -1338,7 +1387,7 @@ function filtered() {
     (!rarityEl.value || c.rarity === rarityEl.value) &&
     (!variantEl.value || c.variant === variantEl.value) &&
     (!finishEl.value || c.finish === finishEl.value) &&
-    (!availableOnlyEl?.checked || Boolean(c.stock_many) || Number(c.sell_qty||0)>0)
+    (!availableOnlyEl?.checked || isInStock(c))
   );
 
   const mode = sortOrderEl?.value || "default";
@@ -1369,6 +1418,10 @@ function filtered() {
     );
   }
 
+  // When explicitly searching, show purchasable matches first and sold-out matches last.
+  if(s && !availableOnlyEl?.checked){
+    list.sort((a,b)=>Number(isInStock(b))-Number(isInStock(a)));
+  }
   return list;
 }
 
@@ -1391,25 +1444,14 @@ function updateLastUpdated(){
 
 function updatePublicStockSummary(){
   if(!publicStockSummaryEl)return;
-
-  let available=0;
-  let manyKinds=0;
-
-  for(const c of cards){
-    if(isMany(c)){
-      manyKinds+=1;
-    }else{
-      available+=Math.max(0,Number(c.sell_qty||0));
-    }
+  if(!cards.length){
+    publicStockSummaryEl.textContent=T("salesCalc");
+    return;
   }
-
+  const activeKinds=cards.filter(isInStock).length;
+  // Completed-order totals are returned by public_sold_counts and must not include pending orders.
   const sold=Object.values(soldCounts).reduce((s,v)=>s+Math.max(0,Number(v||0)),0);
-
-  let text=`${T("available")} ${available.toLocaleString()} ${T("cards")}`;
-  if(manyKinds>0) text+=` + ${T("many")} ${manyKinds} ${T("kinds")}`;
-  text+=` · ${T("sold")} ${sold.toLocaleString()} ${T("cards")}`;
-
-  publicStockSummaryEl.textContent=text;
+  publicStockSummaryEl.textContent=`${T("inStockKinds")} ${activeKinds.toLocaleString()} ${T("kinds")} · ${T("cumulativeSold")} ${sold.toLocaleString()} ${T("cards")}`;
 }
 
 
@@ -1557,8 +1599,49 @@ deckPreviewEl?.addEventListener("click",e=>{
 });
 
 
+function featuredCandidates(){
+  const a=cards.filter(isInStock);
+  const selected=[], chosen=new Set();
+  const tierPrice=c=>{
+    const p=Number(c.sell_price||0);
+    return p>0 && p<=100000 ? Math.min(p,80000) : 0;
+  };
+  const priority=(a,b)=>soldQtyFor(b)-soldQtyFor(a) || tierPrice(b)-tierPrice(a) || Number(a.sort_no||9999)-Number(b.sort_no||9999);
+  const pick=(max,predicate)=>{
+    for(const c of a.filter(x=>!chosen.has(x.code)&&predicate(x)).sort(priority).slice(0,max)){
+      chosen.add(c.code);
+      selected.push(c);
+    }
+  };
+  const variant=c=>String(c.variant||"").toLowerCase();
+  const rarity=c=>String(c.rarity||"").toLowerCase();
+  // Variety is intentional: premium chase cards plus an approachable promo/epic.
+  pick(2,c=>rarity(c)==="showcase" && /overnumber|signature/.test(variant(c)));
+  pick(2,c=>rarity(c)==="showcase" && variant(c)==="alt art");
+  pick(1,c=>variant(c)==="promo");
+  pick(1,c=>rarity(c)==="epic" && String(c.finish||"").toUpperCase()==="FOIL");
+  if(selected.length<6)pick(6-selected.length,c=>rarity(c)==="showcase"||rarity(c)==="epic");
+  return selected;
+}
+
+function renderFeatured(){
+  if(!featuredShopEl || !featuredCardsEl)return;
+  const browsing=Boolean(qEl.value.trim() || rarityEl.value || variantEl.value || finishEl.value);
+  const list=browsing?[]:featuredCandidates();
+  featuredShopEl.hidden=list.length===0;
+  if(!list.length){featuredCardsEl.innerHTML="";return;}
+  featuredCardsEl.innerHTML=list.map(c=>`
+    <button type="button" class="featured-item" data-feature-code="${esc(c.code)}" aria-label="${esc(c.name_ko)}">
+      ${imageHtml(c)}
+      <span class="featured-item-title">${displayNameHtml(c)}</span>
+      <span class="featured-item-tag">${esc(c.variant||c.rarity||"")} · ${esc(c.finish||"")}</span>
+      <span class="featured-item-price">${won(c.sell_price)}</span>
+    </button>`).join("");
+}
+
 function render() {
   const list = filtered();
+  renderFeatured();
 
   cardsEl.innerHTML = list.length
     ? list.map(c => {
@@ -1915,7 +1998,27 @@ drawerCopyBtnEl.addEventListener("click", async () => {
 drawerKakaoBtnEl.addEventListener("click", kakaoInquiry);
 
 
-qEl.addEventListener("input", render);
+function handleSearchInput(){
+  const searching=Boolean(qEl.value.trim());
+  if(searching && !wasSearching){
+    preSearchAvailableOnly=Boolean(availableOnlyEl?.checked);
+    if(availableOnlyEl)availableOnlyEl.checked=false;
+  }else if(!searching && wasSearching){
+    if(availableOnlyEl)availableOnlyEl.checked=preSearchAvailableOnly;
+  }
+  wasSearching=searching;
+  render();
+}
+featuredCardsEl?.addEventListener("click",e=>{
+  const target=e.target.closest("[data-feature-code]");
+  if(!target)return;
+  const c=cards.find(x=>x.code===target.dataset.featureCode);
+  if(!c)return;
+  qEl.value=c.card_no||c.name_ko;
+  handleSearchInput();
+  cardsEl.scrollIntoView({behavior:"smooth",block:"start"});
+});
+qEl.addEventListener("input", handleSearchInput);
 rarityEl.addEventListener("change", render);
 variantEl.addEventListener("change", render);
 finishEl.addEventListener("change", render);
