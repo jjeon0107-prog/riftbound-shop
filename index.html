@@ -1003,7 +1003,7 @@ const I18N={
     guide4:"",
     search:"카드명 / 번호 검색", rarity:"전체 레어도", variant:"전체 유형",
     sortDefault:"기본순", sortHigh:"구매가격 높은순", sortLow:"구매가격 낮은순", sortNo:"카드번호순", sortSold:"인기카드순", availableOnly:"판매중만 보기",
-    inStockKinds:"판매중", cumulativeSold:"누적 판매완료", featuredTitle:"✨ 지금 구매 가능한 주목할 카드", featuredDesc:"카드를 누르면 해당 상품으로 이동",
+    inStockKinds:"판매중", cumulativeSold:"누적 판매완료", featuredTitle:"✨ 지금 구매 가능한 주목할 카드", featuredDesc:"카드를 누르면 해당 상품으로 이동", priceNegotiable:"가격협의",
     updated:"최종 업데이트", noUpdate:"업데이트 기록 없음", salesCalc:"판매 현황 계산 중...",
     available:"판매가능", many:"재고많음", sold:"판매완료", kinds:"종", cards:"장",
     deckTitle:"🧩 추천 덱", deckOpen:"덱 보기", deckClose:"덱 닫기",
@@ -1030,7 +1030,7 @@ const I18N={
     guide4:"• Once your final card list is confirmed, I can create a listing on Global Bunjang for payment and international shipping.",
     search:"Search card name / number", rarity:"All rarities", variant:"All variants",
     sortDefault:"Default", sortHigh:"Price: High to Low", sortLow:"Price: Low to High", sortNo:"Card Number", sortSold:"Popular", availableOnly:"Available only",
-    inStockKinds:"In stock", cumulativeSold:"Sold to date", featuredTitle:"✨ Available featured cards", featuredDesc:"Tap a card to see its listing",
+    inStockKinds:"In stock", cumulativeSold:"Sold to date", featuredTitle:"✨ Available featured cards", featuredDesc:"Tap a card to see its listing", priceNegotiable:"Price negotiable",
     updated:"Last updated", noUpdate:"No update record", salesCalc:"Calculating stock...",
     available:"Available", many:"In stock", sold:"Sold", kinds:"types", cards:"cards",
     deckTitle:"🧩 Recommended Decks", deckOpen:"View Deck", deckClose:"Close Deck",
@@ -1089,6 +1089,15 @@ const langKoBtn=document.querySelector("#langKoBtn");
 const langEnBtn=document.querySelector("#langEnBtn");
 
 const won = n => "₩" + Number(n || 0).toLocaleString("ko-KR");
+// Applies only to buyer-visible text, never to stored admin prices.
+const isNegotiablePrice = c => /overnumber|signature/i.test(String(c?.variant||""));
+const buyerUnitPrice = c => isNegotiablePrice(c) ? T("priceNegotiable") : (Number(c?.sell_price||0)>0 ? won(c.sell_price) : "-");
+const buyerLinePrice = c => isNegotiablePrice(c) ? T("priceNegotiable") : won(Number(c.sell_price||0)*Number(c.buy_qty||0));
+function buyerTotal(list){
+  const fixed=list.filter(c=>!isNegotiablePrice(c)).reduce((sum,c)=>sum+Number(c.buy_qty||0)*Number(c.sell_price||0),0);
+  const negotiable=list.some(isNegotiablePrice);
+  return negotiable ? (fixed>0 ? won(fixed)+" + "+T("priceNegotiable") : T("priceNegotiable")) : won(fixed);
+}
 const esc = s => String(s ?? "").replace(/[&<>"']/g, m => ({
   "&":"&amp;",
   "<":"&lt;",
@@ -1489,7 +1498,7 @@ function deckGroupedHtml(d){
 
 function deckCalc(d){
   const items=Array.isArray(d?.items)?d.items:[];
-  let required=0,buyable=0,total=0,fullTotal=0;
+  let required=0,buyable=0,total=0,fullTotal=0,negotiableQty=0;
   const missing=[];
   for(const x of items){
     const need=Math.max(0,Number(x.qty||0));
@@ -1500,11 +1509,24 @@ function deckCalc(d){
     buyable+=can;
     total+=can*Number(x.sell_price||0);
     fullTotal+=need*Number(x.sell_price||0);
+    if(isNegotiablePrice(x))negotiableQty+=can;
     if(miss>0){
       missing.push({...x,missing_qty:miss,buyable_qty:can});
     }
   }
-  return {required,buyable,total,fullTotal,missing};
+  return {required,buyable,total,fullTotal,missing,negotiableQty};
+}
+
+function buyerDeckTotal(calc,d){
+  if(!calc.negotiableQty)return won(calc.total);
+  let fixed=0;
+  for(const x of (d?.items||[])){
+    if(isNegotiablePrice(x))continue;
+    const need=Math.max(0,Number(x.qty||0));
+    const available=Boolean(x.stock_many)?need:Math.max(0,Number(x.available_qty||0));
+    fixed+=Math.min(need,available)*Number(x.sell_price||0);
+  }
+  return fixed>0 ? won(fixed)+" + "+T("priceNegotiable") : T("priceNegotiable");
 }
 
 function renderDeckShop(){
@@ -1540,7 +1562,7 @@ function renderDeckShop(){
     <div class="deck-preview-stats">
       <span>${T("composition")} ${calc.required} ${T("cards")}</span>
       <span>${T("currentBuy")} ${calc.buyable} ${T("cards")}</span>
-      <span>${won(calc.total)}</span>
+      <span>${buyerDeckTotal(calc,d)}</span>
     </div>
     ${deckGroupedHtml(d)}
     ${calc.missing.length
@@ -1548,7 +1570,7 @@ function renderDeckShop(){
       : `<div class="deck-preview-ok">${T("allBuyable")}</div>`
     }
     <button class="deck-add-btn" data-add-deck="${d.id}" ${calc.buyable<1?"disabled":""}>
-      ${T("addAvailable")} ${calc.buyable} ${T("addAtOnce")} · ${won(calc.total)}
+      ${T("addAvailable")} ${calc.buyable} ${T("addAtOnce")} · ${buyerDeckTotal(calc,d)}
     </button>
   `;
 }
@@ -1635,7 +1657,7 @@ function renderFeatured(){
       ${imageHtml(c)}
       <span class="featured-item-title">${displayNameHtml(c)}</span>
       <span class="featured-item-tag">${esc(c.variant||c.rarity||"")} · ${esc(c.finish||"")}</span>
-      <span class="featured-item-price">${won(c.sell_price)}</span>
+      <span class="featured-item-price">${buyerUnitPrice(c)}</span>
     </button>`).join("");
 }
 
@@ -1663,7 +1685,7 @@ function render() {
                 ${esc(c.variant || "Standard")} ·
                 ${esc(c.finish)}
               </div>
-              <div class="price">${c.sell_price > 0 ? won(c.sell_price) : "-"}</div>
+              <div class="price">${buyerUnitPrice(c)}</div>
               ${
                 soldout
                   ? `<div class="soldout-badge">${T("soldOut")}${soldQtyFor(c)>0?` · ${T("sold")} ${soldQtyFor(c)} ${T("cards")}`:""}</div>`
@@ -1708,9 +1730,7 @@ function selected() {
 function updateCart() {
   const s = selected();
   const qty = s.reduce((a, c) => a + c.buy_qty, 0);
-  const sum = s.reduce((a, c) => a + c.buy_qty * c.sell_price, 0);
-
-  cartSummaryEl.textContent = `${T("selected")} ${qty} ${T("cards")} · ${won(sum)}`;
+  cartSummaryEl.textContent = `${T("selected")} ${qty} ${T("cards")} · ${buyerTotal(s)}`;
   if (cartViewBtnEl) cartViewBtnEl.textContent = `${T("viewCart")} (${qty})`;
   renderCartDrawer();
 }
@@ -1778,7 +1798,7 @@ function cartItemHtml(c){
       <div class="cart-info">
         <div class="cart-name">${esc(c.name_ko)}${lang==="en"&&englishName(c)?`<span class="cart-name-en">${esc(englishName(c))}</span>`:""}</div>
         <div class="cart-meta">${esc(c.card_no)} · ${esc(c.rarity||"")} · ${esc(c.variant||"Standard")} · ${esc(c.finish)}</div>
-        <div class="cart-price">${won(c.sell_price)} × ${c.buy_qty} = ${won(c.sell_price*c.buy_qty)}</div>
+        <div class="cart-price">${buyerUnitPrice(c)} × ${c.buy_qty} = ${buyerLinePrice(c)}</div>
       </div>
       <div class="cart-actions">
         <button class="drawer-minus">−</button>
@@ -1793,12 +1813,11 @@ function cartItemHtml(c){
 function renderCartDrawer() {
   const s = selected();
   const qty = s.reduce((a, c) => a + c.buy_qty, 0);
-  const sum = s.reduce((a, c) => a + c.buy_qty * c.sell_price, 0);
   const normalQty=s.filter(c=>String(c.finish||"").toUpperCase()!=="FOIL").reduce((a,c)=>a+c.buy_qty,0);
   const foilQty=qty-normalQty;
 
   drawerQtyEl.textContent = `${T("total")} ${qty} ${T("cards")} · ${T("normal")} ${normalQty} · FOIL ${foilQty}`;
-  drawerTotalEl.textContent = won(sum);
+  drawerTotalEl.textContent = buyerTotal(s);
 
   if (!s.length) {
     cartListEl.innerHTML = `<div class="cart-empty">${T("emptyCart")}</div>`;
@@ -1831,7 +1850,6 @@ function orderText(orderId=null) {
   if (!s.length) return "";
 
   const qty = s.reduce((a, c) => a + c.buy_qty, 0);
-  const sum = s.reduce((a, c) => a + c.buy_qty * c.sell_price, 0);
   const g=groupedSelectedCards(s);
   const normalQty=g.normal.reduce((a,c)=>a+c.buy_qty,0);
   const foilQty=qty-normalQty;
@@ -1840,14 +1858,14 @@ function orderText(orderId=null) {
   const lines=[
     T("inquiry"),
     ...(orderId ? [`${T("orderNo")} #${String(orderId).padStart(6,"0")}`] : []),
-    `${T("total")} ${qty} ${unit} · ${T("normal")} ${normalQty} ${unit} · FOIL ${foilQty} ${unit} / ${won(sum)}`,
+    `${T("total")} ${qty} ${unit} · ${T("normal")} ${normalQty} ${unit} · FOIL ${foilQty} ${unit} / ${buyerTotal(s)}`,
     ""
   ];
 
   if(g.normal.length){
     lines.push(`[${T("normalCards")} · ${normalQty} ${unit}]`);
     for(const c of g.normal){
-      lines.push(`${c.card_no} ${orderDisplayName(c)} ×${c.buy_qty} — ${won(c.sell_price*c.buy_qty)}`);
+      lines.push(`${c.card_no} ${orderDisplayName(c)} ×${c.buy_qty} — ${buyerLinePrice(c)}`);
     }
     lines.push("");
   }
@@ -1859,13 +1877,13 @@ function orderText(orderId=null) {
       const subQty=list.reduce((a,c)=>a+c.buy_qty,0);
       lines.push(`<${key} · ${subQty} ${unit}>`);
       for(const c of list){
-        lines.push(`${c.card_no} ${orderDisplayName(c)} ×${c.buy_qty} — ${won(c.sell_price*c.buy_qty)}`);
+        lines.push(`${c.card_no} ${orderDisplayName(c)} ×${c.buy_qty} — ${buyerLinePrice(c)}`);
       }
       lines.push("");
     }
   }
 
-  lines.push(`${T("total")} ${qty} ${unit} / ${won(sum)}`);
+  lines.push(`${T("total")} ${qty} ${unit} / ${buyerTotal(s)}`);
   return lines.join("\n");
 }
 
