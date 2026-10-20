@@ -23,6 +23,19 @@ h1{font-size:17px;margin:0 0 5px}
 .topline input,.topline button,.panel input,.panel select,.panel button{border:1px solid var(--line);background:#fff;border-radius:8px;padding:7px;font-size:11px;min-width:0}
 .promo-quick-active{background:#111827!important;color:#fff!important;border-color:#111827!important}
 .total-chip{padding:7px 9px;background:#fff;border:1px solid var(--line);border-radius:8px;font-size:11px;font-weight:800;white-space:nowrap}
+.value-chips{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;grid-column:1/-1}
+.value-chips .total-chip{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0;white-space:normal}
+.value-chips .total-chip b{font-size:13px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.value-chips .total-chip span{font-size:10px;color:#475569}
+.stat b{font-variant-numeric:tabular-nums}
+.stock-split{font-size:9px;line-height:1.55;color:#475569;margin-top:5px}
+.stock-split b{color:#0f172a}
+.stock-split .sold-count{color:#2563eb;font-weight:900}
+@media(max-width:760px){
+  .value-chips .total-chip{display:block;padding:6px 7px}
+  .value-chips .total-chip span{display:block;font-size:9px}
+  .value-chips .total-chip b{display:block;margin-top:3px;font-size:13px}
+}
 .manage-panel{display:none;margin-top:6px}
 .manage-panel.open{display:block}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:5px}
@@ -1048,7 +1061,10 @@ body.orders-open{overflow:hidden!important}
 onclick="const p=document.getElementById('managePanel');const opening=!p.classList.contains('open');p.classList.toggle('open',opening);p.classList.toggle('hidden',!opening);this.textContent=opening?'관리 메뉴 닫기':'관리 메뉴 열기';return false;">
 관리 메뉴 열기
 </button>
-        <div class="total-chip">총 보유가치 <span id="totalValueTop">₩0</span></div>
+        <div class="value-chips">
+          <div class="total-chip"><span>바인더 보관가치 (필터 기준)</span><b id="binderValueTop">₩0</b></div>
+          <div class="total-chip"><span>판매가능 재고가치 (필터 기준)</span><b id="saleValueTop">₩0</b></div>
+        </div>
       </div>
 
       <div id="managePanel" class="manage-panel panel hidden">
@@ -1095,14 +1111,15 @@ onclick="const p=document.getElementById('managePanel');const opening=!p.classLi
         </div>
 
         <div class="controls-section sub" style="line-height:1.5">
-수량은 <b>전체 보유수량</b> 기준. 기본상태에서는 1장을 보관하고 <b>2장째부터 자동 판매</b>돼. <b>마지막 1장도 판매</b>를 체크하면 보유수량 전부 판매페이지에 노출돼.
+수량은 <b>전체 보유수량</b> 기준. 기본상태에서는 <b>카드 종류별 1장을 보관</b>하고 나머지만 판매해. <b>마지막 1장도 판매</b>한 카드는 보관가치에서 제외돼. 아래 가치는 <b>현재 검색·필터에 맞춰</b> 계산하며 재고많음(-)의 판매 수량/가치는 미산정해.
 </div>
 <div class="controls-section stats">
-          <div class="stat"><b id="sOwned">0</b><span>보유 카드종</span></div>
+          <div class="stat"><b id="sOwned">0</b><span>보관 카드종 (1장씩)</span></div>
+          <div class="stat"><b id="sBinderVal">₩0</b><span>바인더 보관가치</span></div>
           <div class="stat"><b id="sSaleQty">0</b><span>판매가능 수량</span></div>
-          <div class="stat"><b id="sSaleVal">₩0</b><span>판매재고 가치</span></div>
-          <div class="stat"><b id="sFiltered">0</b><span>필터 카드</span></div>
-          <div class="stat"><b id="sFilteredVal">₩0</b><span>필터 보유가치</span></div>
+          <div class="stat"><b id="sSaleVal">₩0</b><span>판매가능 재고가치</span></div>
+          <div class="stat"><b id="sSoldQty">…</b><span>판매완료 수량</span></div>
+          <div class="stat"><b id="sFiltered">0</b><span>필터 카드종</span></div>
           <div class="stat"><b id="autosaveStatus">자동 저장 ON</b><span>저장상태</span></div>
         </div>
 
@@ -1180,7 +1197,7 @@ onclick="const p=document.getElementById('managePanel');const opening=!p.classLi
     <table class="list-table">
       <thead><tr>
         <th>번호</th><th>카드명</th><th>유형</th><th>피니시</th><th>마지막 1장 판매</th>
-        <th>전체수량</th><th>판매가</th><th>북미가</th><th>보유가치</th>
+        <th>전체수량</th><th>보관</th><th>판매가능</th><th>판매완료</th><th>판매가</th><th>북미가</th><th>보관가치</th><th>판매재고가치</th>
       </tr></thead>
       <tbody id="listBody"></tbody>
     </table>
@@ -1386,10 +1403,16 @@ const k2u=v=>Number(v||0)?Number(v)/100:"";
 const naKrw=c=>Math.round(Number(c.north_america_price||0)*(fx/BASE_FX));
 const isMany=c=>Boolean(c.stock_many);
 const isCU=c=>["common","uncommon","커먼","언커먼","c","u"].includes(String(c.rarity||"").trim().toLowerCase());
-const cv=c=>isMany(c)?0:Number(c.total_qty||0)*Number(c.sell_price||0);
+// A copy is reserved whenever the "sell the last copy" switch is OFF.
+const binderQty=c=>c.sale_enabled?0:Math.min(1,Math.max(0,Number(c.total_qty||0)));
+const binderVal=c=>binderQty(c)*Number(c.sell_price||0);
 const saleQty=c=>isMany(c)?0:(c.sale_enabled?Math.max(0,Number(c.total_qty||0)):Math.max(0,Number(c.total_qty||0)-1));
 const isSellable=c=>isMany(c)||saleQty(c)>0;
 const sv=c=>saleQty(c)*Number(c.sell_price||0);
+let soldByCode=Object.create(null);
+let soldCountsReady=false;
+const soldQtyFor=c=>soldCountsReady?Math.max(0,Number(soldByCode[c.code]||0)):null;
+const displaySoldQty=c=>soldCountsReady?soldQtyFor(c).toLocaleString("ko-KR"):"…";
 
 
 function isSignature(c){
@@ -1599,6 +1622,8 @@ async function loadCards(){
   buildVariant();
   updatePromoQuickLabel();
   render();
+  // Sold counts are read from completed orders, never inferred from current stock.
+  void loadCardSoldCounts(true);
 }
 async function loadSettings(){
   const {data}=await S.from("shop_settings").select("*").eq("id",1).maybeSingle();
@@ -1673,15 +1698,19 @@ function filtered(){
   return a;
 }
 function stats(a){
-  const total=cards.reduce((x,c)=>x+cv(c),0);
-  const manyAll=cards.filter(isMany).length;
   const manyFiltered=a.filter(isMany).length;
-  $("#totalValueTop").textContent=won(total)+(manyAll?` + 대량 ${manyAll}종`:"");
-  $("#sOwned").textContent=cards.filter(c=>isMany(c)||Number(c.total_qty||0)>0).length.toLocaleString();
-  $("#sSaleQty").textContent=cards.reduce((x,c)=>x+saleQty(c),0).toLocaleString()+(manyAll?` + 대량 ${manyAll}종`:"");
-  $("#sSaleVal").textContent=won(cards.reduce((x,c)=>x+sv(c),0))+(manyAll?" + 대량재고":"");
+  const binderValue=a.reduce((x,c)=>x+binderVal(c),0);
+  const saleValue=a.reduce((x,c)=>x+sv(c),0);
+  const binderCount=a.reduce((x,c)=>x+binderQty(c),0);
+  const saleCount=a.reduce((x,c)=>x+saleQty(c),0);
+  $("#binderValueTop").textContent=won(binderValue);
+  $("#saleValueTop").textContent=won(saleValue)+(manyFiltered?" + 재고많음 제외":"");
+  $("#sOwned").textContent=binderCount.toLocaleString();
+  $("#sBinderVal").textContent=won(binderValue);
+  $("#sSaleQty").textContent=saleCount.toLocaleString()+(manyFiltered?` + 재고많음 ${manyFiltered}종`:"");
+  $("#sSaleVal").textContent=won(saleValue)+(manyFiltered?" + 재고많음 제외":"");
+  $("#sSoldQty").textContent=soldCountsReady?a.reduce((x,c)=>x+soldQtyFor(c),0).toLocaleString():"…";
   $("#sFiltered").textContent=a.length.toLocaleString();
-  $("#sFilteredVal").textContent=won(a.reduce((x,c)=>x+cv(c),0))+(manyFiltered?` + 대량 ${manyFiltered}종`:"");
 }
 function render(){
   const a=filtered();
@@ -1709,7 +1738,10 @@ function render(){
           <input class="pricei album-price-input" type="number" min="0" step="1" value="${k2u(c.sell_price)}" title="1 = 100원">
           <span class="album-price-unit">×100원</span>
         </div>
-        <div class="value">${isMany(c)?"전체 - · 판매가능 재고많음 · 보유가치 -":`전체 ${Number(c.total_qty||0)}장 · 판매가능 ${saleQty(c)}장 · 보유가치 ${won(cv(c))}`}</div>
+        <div class="stock-split">
+          <div>전체 <b>${isMany(c)?"-":Number(c.total_qty||0)}장</b> · 보관 <b>${binderQty(c)}장</b> · 판매가능 <b>${isMany(c)?"재고많음":saleQty(c)+"장"}</b> · <span class="sold-count">판매완료 ${displaySoldQty(c)}장</span></div>
+          <div>보관가치 <b>${won(binderVal(c))}</b> · 판매재고가치 <b>${isMany(c)?"미산정":won(sv(c))}</b></div>
+        </div>
       </div>
     </article>`).join(""):'<div class="panel">조건에 맞는 카드가 없어.</div>';
 
@@ -1727,10 +1759,14 @@ function render(){
           <button class="l-plus">＋</button>
         </div>
       </td>
+      <td>${binderQty(c)}</td>
+      <td>${isMany(c)?"-":saleQty(c)}</td>
+      <td class="sold-count">${displaySoldQty(c)}</td>
       <td><input class="l-price" type="number" step=".1" min="0" value="${k2u(c.sell_price)}"></td>
       <td>${won(naKrw(c))}</td>
-      <td>${won(cv(c))}</td>
-    </tr>`).join(""):'<tr><td colspan="9">조건에 맞는 카드가 없어.</td></tr>';
+      <td>${won(binderVal(c))}</td>
+      <td>${isMany(c)?"미산정":won(sv(c))}</td>
+    </tr>`).join(""):'<tr><td colspan="13">조건에 맞는 카드가 없어.</td></tr>';
 
   applyViewMode();
 }
@@ -1990,6 +2026,29 @@ function currentOrderProblems(items){
 
 let completedSalesCache=null;
 
+// All completed orders, including older records, contribute to per-card sold quantities.
+async function loadCardSoldCounts(force=false){
+  try{
+    const orders=await loadAllCompletedSales(force);
+    const next=Object.create(null);
+    for(const order of orders){
+      const items=Array.isArray(order.items)?order.items:[];
+      for(const item of items){
+        const code=String(item.code||"").trim();
+        const qty=Number(item.qty);
+        if(!code||!Number.isFinite(qty)||!Number.isInteger(qty)||qty<=0)continue;
+        next[code]=(next[code]||0)+qty;
+      }
+    }
+    soldByCode=next;
+    soldCountsReady=true;
+  }catch(e){
+    soldCountsReady=false;
+    console.warn("카드별 판매완료 수량 조회 실패:",e);
+  }
+  render();
+}
+
 async function loadAllCompletedSales(force=false){
   if(completedSalesCache && !force)return completedSalesCache;
 
@@ -2177,6 +2236,7 @@ async function refreshOrders(){
   doneEl.innerHTML='<div class="sub">불러오는 중...</div>';
   completedSalesCache=null;
   loadCompletedSalesSummary();
+  void loadCardSoldCounts();
 
   const {data,error}=await S.from("orders")
     .select("id,created_at,status,total_qty,total_amount,items,completed_at")
@@ -2769,8 +2829,8 @@ $("#saveBtn").onclick=async()=>{if(!dirty.size)return alert("변경된 항목이
 
 const ce=v=>`"${String(v??"").replace(/"/g,'""')}"`;
 $("#exportBtn").onclick=()=>{
-  const a=filtered(),r=[["카드번호","카드명","레어도","유형","피니시","판매노출","전체보유수량","판매가능수량","판매가격(원)","북미가격(원)","현재보유가치(원)"]];
-  a.forEach(c=>r.push([c.card_no,c.name_ko,c.rarity,c.variant,c.finish,c.sale_enabled?"Y":"N",c.total_qty,saleQty(c),c.sell_price,naKrw(c),cv(c)]));
+  const a=filtered(),r=[["카드번호","카드명","레어도","유형","피니시","마지막1장도판매","전체보유수량","보관수량","판매가능수량","판매완료수량","판매가격(원)","북미가격(원)","바인더보관가치(원)","판매가능재고가치(원)"]];
+  a.forEach(c=>r.push([c.card_no,c.name_ko,c.rarity,c.variant,c.finish,c.sale_enabled?"Y":"N",c.stock_many?"-":c.total_qty,binderQty(c),c.stock_many?"-":saleQty(c),soldQtyFor(c)??"확인필요",c.sell_price,naKrw(c),binderVal(c),c.stock_many?"미산정":sv(c)]));
   const csv="\uFEFF"+r.map(x=>x.map(ce).join(",")).join("\n");
   const l=document.createElement("a");l.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));l.download=`origins_admin_filtered_${new Date().toISOString().slice(0,10)}.csv`;l.click();URL.revokeObjectURL(l.href);
 };
