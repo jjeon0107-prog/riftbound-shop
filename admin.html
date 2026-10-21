@@ -38,6 +38,56 @@ h1{font-size:17px;margin:0 0 5px}
 }
 .manage-panel{display:none;margin-top:6px}
 .manage-panel.open{display:block}
+
+/* v38 - Keep the expanded mobile management menu inside the viewport.
+   The sticky header used to grow past the screen with no reachable lower controls. */
+@media(max-width:850px){
+  .top:has(#managePanel.open){
+    height:100vh; /* fallback for older viewport units */
+    height:100dvh;
+    overflow:hidden;
+  }
+  .top:has(#managePanel.open) .head{
+    display:flex;
+    flex-direction:column;
+    height:100%;
+    min-height:0;
+    min-width:0;
+    overflow:hidden;
+  }
+  .top:has(#managePanel.open) #adminTop{
+    display:flex;
+    flex:1 1 auto;
+    min-height:0;
+    min-width:0;
+    flex-direction:column;
+    overflow:hidden;
+  }
+  .top:has(#managePanel.open) .topline{
+    flex:0 0 auto;
+    min-width:0;
+  }
+  .top:has(#managePanel.open) #managePanel{
+    flex:1 1 auto;
+    min-height:0;
+    max-height:100%;
+    width:100%;
+    overflow-y:auto;
+    overflow-x:hidden;
+    -webkit-overflow-scrolling:touch;
+    overscroll-behavior:contain;
+    padding-bottom:max(14px,env(safe-area-inset-bottom));
+  }
+  #managePanel .grid2,
+  #managePanel .grid3,
+  #managePanel .grid4{
+    min-width:0;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+  #managePanel .controls-section{
+    min-width:0;
+  }
+}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:5px}
 .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
 .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
