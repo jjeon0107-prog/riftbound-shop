@@ -638,6 +638,41 @@ body.cart-open{
   color:var(--muted);
 }
 
+
+/* Random slimbox product: square-ish listing and an accessible detail sheet. */
+.random-shop{margin:12px 0 17px}
+.random-shop-heading{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:9px}
+.random-shop-heading b{font-size:17px;color:#17233a}
+.random-shop-heading span{font-size:12px;color:#687383}
+.random-products{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,300px));gap:12px}
+.random-product{display:block;text-align:left;width:100%;background:#fff;border:1px solid #dce2e9;border-radius:14px;overflow:hidden;cursor:pointer;padding:0;box-shadow:0 3px 12px rgba(20,36,65,.06);color:#172236}
+.random-product:hover,.random-product:focus-visible{outline:2px solid #ccaa72;outline-offset:1px}
+.random-product-media{display:block;aspect-ratio:4/3;background:#17263e;overflow:hidden}
+.random-product-media img{display:block;width:100%;height:100%;object-fit:cover}
+.random-product-body{display:block;padding:12px}
+.random-product-title{display:block;font-size:14px;font-weight:900;line-height:1.4}
+.random-product-sub{display:block;color:#53627a;font-size:12px;margin-top:5px;line-height:1.5}
+.random-product-price{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-top:9px;font-size:19px;font-weight:900}
+.random-product-price small{font-size:11px;color:#8b6a34;font-weight:750}
+.random-modal{position:fixed;inset:0;background:rgba(10,17,30,.72);z-index:1100;display:none;align-items:center;justify-content:center;padding:14px}
+.random-modal.show{display:flex}
+.random-sheet{background:#fff;max-width:720px;width:100%;max-height:93dvh;overflow-y:auto;border-radius:16px;position:relative}
+.random-sheet-top{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid #e5e7eb}
+.random-sheet-top b{font-size:14px}
+.random-close{border:0;border-radius:9px;background:#f0f1f4;padding:8px 12px;font-size:13px;font-weight:850;cursor:pointer}
+.random-detail-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;padding:16px}
+.random-detail-image{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:11px;background:#14233b}
+.random-detail-name{font-size:21px;font-weight:900;line-height:1.35}
+.random-detail-price{font-size:26px;font-weight:950;color:#192940;margin:8px 0 13px}
+.random-detail-promise{background:#f6f1e8;color:#62451c;padding:9px 12px;border-radius:9px;font-size:13px;font-weight:850;margin:10px 0}
+.random-detail-slots{display:grid;grid-template-columns:repeat(2,1fr);gap:7px;margin:10px 0}
+.random-detail-slots span{background:#f3f5f8;border-radius:8px;padding:9px;font-size:12px;font-weight:800}
+.random-detail-desc{font-size:12px;line-height:1.75;color:#536071;white-space:pre-line}
+.random-detail-note{font-size:11px;line-height:1.6;color:#727b88;margin-top:10px}
+.random-inquiry{width:100%;padding:13px 16px;background:#14243e;border:none;color:#fff;font-size:14px;font-weight:850;border-radius:10px;cursor:pointer;margin-top:15px}
+body.random-modal-open{overflow:hidden}
+@media(max-width:600px){.random-products{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.random-product-body{padding:9px}.random-product-title{font-size:12px}.random-product-price{font-size:16px}.random-product-sub{font-size:10px}.random-shop-heading b{font-size:15px}.random-detail-grid{grid-template-columns:1fr;padding:12px;gap:9px}.random-sheet{max-height:95dvh}.random-detail-image{max-height:225px}.random-detail-name{font-size:18px}}
+
 </style>
 
 
@@ -869,6 +904,12 @@ body.cart-open{
     <div id="featuredCards" class="featured-grid"></div>
   </section>
 
+
+  <section id="randomShop" class="random-shop" hidden aria-label="랜덤 카드 묶음">
+    <div class="random-shop-heading"><b>랜덤 카드 묶음</b><span>이미지 클릭 · 구성 및 구매 안내</span></div>
+    <div id="randomProducts" class="random-products"></div>
+  </section>
+
   <section id="deckShop" class="deck-shop compact-deck-shop">
     <div class="deck-shop-head compact-deck-head">
       <div id="deckShopTitle" class="deck-shop-title">🧩 추천 덱</div>
@@ -885,7 +926,7 @@ body.cart-open{
   </div>
   <div style="height:90px"></div>
   <div class="sub" style="text-align:center;padding:12px 0 90px">
-    <span style="opacity:.45">build v34 PROMO-NAME</span><br>
+    <span style="opacity:.45">build v35 RANDOM-SLIMBOX</span><br>
     <span id="footerText">카드 이미지 © Riot Games · 비공식 개인 판매 페이지</span>
   </div>
 </main>
@@ -902,6 +943,25 @@ body.cart-open{
   </div>
 </div>
 
+
+
+<div id="randomBoxModal" class="random-modal" aria-hidden="true">
+  <div class="random-sheet" role="dialog" aria-modal="true" aria-labelledby="randomDetailName">
+    <div class="random-sheet-top"><b>랜덤 카드 묶음 상세</b><button id="closeRandomBox" class="random-close" type="button">닫기 ✕</button></div>
+    <div class="random-detail-grid">
+      <img id="randomDetailImage" class="random-detail-image" alt="랜덤 카드 묶음 대표 이미지">
+      <div>
+        <div id="randomDetailName" class="random-detail-name"></div>
+        <div id="randomDetailPrice" class="random-detail-price"></div>
+        <div class="random-detail-promise">동일 카드 중복을 최대한 줄여 직접 구성해요.</div>
+        <div id="randomDetailSlots" class="random-detail-slots"></div>
+        <div id="randomDetailDesc" class="random-detail-desc"></div>
+        <div class="random-detail-note">동일 카드가 일부 중복될 수 있습니다. 실제 카드 목록은 랜덤이며, 미개봉 슬림박스가 아닌 보유 카드로 재구성한 묶음 상품입니다. 배송비 별도.</div>
+        <button id="randomDetailInquiry" class="random-inquiry" type="button">구매 문의 · 주문 문구 복사</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <div id="cartDrawer" class="cart-drawer">
   <div class="cart-sheet">
@@ -2043,6 +2103,89 @@ finishEl.addEventListener("change", render);
 
 if(sortOrderEl) sortOrderEl.addEventListener("change",render);
 if(availableOnlyEl) availableOnlyEl.addEventListener("change",render);
+
+let randomBoxProducts=[];
+let selectedRandomBox=null;
+const randomSlots = [
+  ["alt","알터 아트"],["epic","에픽"],["rare","레어"],["foil","C/UC 포일"],["normal","일반 C/UC"]
+];
+async function loadRandomBoxes(){
+  try{
+    const rows=await restGet("random_box_products?select=id,slug,name,description,price,stock_qty,slots,image_url&active=eq.true&order=id.asc");
+    randomBoxProducts=Array.isArray(rows)?rows:[];
+    renderRandomBoxes();
+  }catch(err){
+    console.warn("랜덤 상품을 불러오지 못했습니다:",err);
+    document.querySelector("#randomShop").hidden=true;
+  }
+}
+function renderRandomBoxes(){
+  const section=document.querySelector("#randomShop");
+  const list=document.querySelector("#randomProducts");
+  if(!section||!list)return;
+  section.hidden=!randomBoxProducts.length;
+  list.innerHTML=randomBoxProducts.map(p=>{
+    const slots=p.slots||{};
+    const parts=randomSlots.map(([k,label])=>label+" "+Number(slots[k]||0)+"장").join(" · ");
+    const soldout=Number(p.stock_qty||0)<1;
+    return '<button class="random-product" type="button" data-random-id="'+Number(p.id)+'">'+
+      '<span class="random-product-media"><img src="'+esc(p.image_url||"assets/random-slimbox.svg")+'" alt="오리진 랜덤 슬림박스 120장" loading="lazy"></span>'+
+      '<span class="random-product-body"><span class="random-product-title">'+esc(p.name)+'</span>'+
+      '<span class="random-product-sub">최대한 중복 없이 · '+esc(parts)+'</span>'+
+      '<span class="random-product-price">'+won(p.price)+'<small>'+(soldout?"현재 품절":"자세히 보기 →")+'</small></span></span></button>';
+  }).join("");
+}
+function openRandomBox(id){
+  const p=randomBoxProducts.find(x=>Number(x.id)===Number(id));
+  if(!p)return;
+  selectedRandomBox=p;
+  const modal=document.querySelector("#randomBoxModal");
+  document.querySelector("#randomDetailImage").src=p.image_url||"assets/random-slimbox.svg";
+  document.querySelector("#randomDetailName").textContent=p.name;
+  document.querySelector("#randomDetailPrice").textContent=won(p.price);
+  document.querySelector("#randomDetailSlots").innerHTML=randomSlots.map(([k,label])=>
+    '<span>'+esc(label)+' <b>'+Number(p.slots?.[k]||0)+'장</b></span>'
+  ).join("");
+  document.querySelector("#randomDetailDesc").textContent=p.description||"";
+  const btn=document.querySelector("#randomDetailInquiry");
+  btn.disabled=Number(p.stock_qty||0)<1;
+  btn.textContent=btn.disabled?"현재 품절":"구매 문의 · 주문 문구 복사";
+  modal.classList.add("show");
+  modal.setAttribute("aria-hidden","false");
+  document.body.classList.add("random-modal-open");
+  document.querySelector("#closeRandomBox").focus();
+}
+function closeRandomBox(){
+  const modal=document.querySelector("#randomBoxModal");
+  modal.classList.remove("show");
+  modal.setAttribute("aria-hidden","true");
+  document.body.classList.remove("random-modal-open");
+  selectedRandomBox=null;
+}
+document.querySelector("#randomProducts")?.addEventListener("click",e=>{
+  const btn=e.target.closest("[data-random-id]");
+  if(btn)openRandomBox(btn.dataset.randomId);
+});
+document.querySelector("#closeRandomBox")?.addEventListener("click",closeRandomBox);
+document.querySelector("#randomBoxModal")?.addEventListener("click",e=>{
+  if(e.target.id==="randomBoxModal")closeRandomBox();
+});
+document.addEventListener("keydown",e=>{
+  if(e.key==="Escape"&&document.querySelector("#randomBoxModal")?.classList.contains("show"))closeRandomBox();
+});
+document.querySelector("#randomDetailInquiry")?.addEventListener("click",async()=>{
+  const p=selectedRandomBox;if(!p||Number(p.stock_qty||0)<1)return;
+  const slots=randomSlots.map(([k,label])=>label+" "+Number(p.slots?.[k]||0)+"장").join(", ");
+  const message="안녕하세요. "+p.name+" 1세트 구매 문의드립니다.\n구성: "+slots+"\n가격: "+won(p.price)+" (배송비 별도)\n최대한 중복 없이 구성 부탁드립니다.";
+  // Open synchronously in the click handler so browser popup blockers don't prevent it.
+  const kakaoOk=Boolean(C.KAKAO_OPENCHAT_URL&&!C.KAKAO_OPENCHAT_URL.includes("YOUR_LINK"));
+  const popup=kakaoOk?window.open(C.KAKAO_OPENCHAT_URL,"_blank","noopener"):null;
+  try{await navigator.clipboard.writeText(message);alert("구매 문의 문구를 복사했어요. 카카오톡에 붙여넣어 주세요.");}
+  catch{prompt("아래 내용을 복사해 주세요.",message);}
+  if(!kakaoOk)alert("카카오톡 주소가 설정되지 않아 문의 문구만 준비했어요.");
+});
+loadRandomBoxes();
+
 loadEnglishNames().finally(()=>{ applyLanguage(); load(); });
 </script>
 </body>
