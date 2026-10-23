@@ -1078,6 +1078,23 @@ body.orders-open{overflow:hidden!important}
 @media(max-width:650px){.rb-overlay{padding:0}.rb-box{height:100dvh;max-height:100dvh;border-radius:0}.rb-main{grid-template-columns:1fr}.rb-full{grid-column:auto}}
 
 </style>
+
+<style>
+.rb-box{width:min(1100px,100%)}
+.rb-tools{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}.rb-tools button{min-height:40px}
+.rb-caps{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px;margin:10px 0}
+.rb-caps label{font-size:12px!important}.rb-caps input{width:100%;box-sizing:border-box}
+.rb-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(115px,1fr));gap:9px;margin:10px 0}
+.rb-card{min-width:0;text-align:left;padding:7px;border:1px solid #dce2e9;border-radius:10px;background:#fff;cursor:pointer;color:#172236}
+.rb-card .img{display:block;width:100%;height:auto!important;aspect-ratio:5/7;object-fit:contain;border-radius:5px;background:#f3f4f6}
+.rb-card b,.rb-card small{display:block;font-size:11px;margin-top:4px;overflow-wrap:anywhere}
+.rb-card small{color:#64748b;font-size:10px}.rb-card strong{display:block;font-size:12px;margin-top:5px}
+.rb-card:hover,.rb-card:focus-visible{outline:2px solid #2563eb;outline-offset:1px}
+.rb-picker{border:2px solid #94a3b8;border-radius:12px;padding:10px;margin:10px 0;background:#f8fafc}
+.rb-picker[hidden]{display:none}.rb-picker .rb-cards{max-height:430px;overflow:auto}
+.rb-kind-head{font-size:14px;font-weight:900;margin:14px 0 4px}.rb-builder-summary{white-space:pre-line;line-height:1.6;padding:10px;background:#eef6ff;border-radius:9px;font-size:13px}
+@media(max-width:650px){.rb-caps{grid-template-columns:repeat(3,minmax(0,1fr))}.rb-cards{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}}
+</style>
 </head>
 <body>
 <header class="top">
@@ -1289,12 +1306,30 @@ onclick="const p=document.getElementById('managePanel');const opening=!p.classLi
    <p class="rb-note">판매 완료 등록 시 박스 수량은 자동으로 1 감소합니다.</p>
   </section>
   <section class="rb-pane">
-   <b>판매 완료 · 실제 카드 재고 차감</b>
-   <p class="rb-note">한 줄에 카드 코드와 수량을 입력하세요. 예: OGN-001-NORMAL,2<br>수량 생략 시 1장. 동일 코드는 수량을 합산합니다.</p>
-   <textarea id="rbList" placeholder="OGN-039a-FOIL,1&#10;OGN-080-FOIL,1&#10;OGN-001-NORMAL,2"></textarea>
-   <div id="rbPreview" class="rb-preview">카드 리스트를 입력하면 검증 결과가 표시됩니다.</div>
-   <button type="button" id="rbConfirm">검증 후 판매 완료·재고 차감</button>
-   <p class="rb-note">알터 1, 에픽 3, 레어 10, C/UC 포일 10, 일반 96장 일치 시에만 처리됩니다. 바인더 보관 1장은 제외합니다. 실행 취소는 지원하지 않습니다.</p>
+
+   <b>120장 자동 추천 · 이미지로 교체</b>
+   <p class="rb-note">판매 후 아래에서 추천 목록을 만들고 실물을 준비하세요. 등급별 저가 우선 · 중복 없이 우선 구성 · 부족하면 판매량이 적고 재고가 많은 카드로 중복 보충 · 바인더 보관분 제외. 추천만으로는 재고가 차감되지 않습니다.</p>
+   <div class="rb-caps">
+    <label>알터 상한(원)<input id="rbCap_alt" type="number" min="1" step="100" value="5000"></label>
+    <label>에픽 상한(원)<input id="rbCap_epic" type="number" min="1" step="100" value="3000"></label>
+    <label>레어 상한(원)<input id="rbCap_rare" type="number" min="1" step="100" value="1000"></label>
+    <label>포일 상한(원)<input id="rbCap_foil" type="number" min="1" step="100" value="500"></label>
+    <label>일반 상한(원)<input id="rbCap_normal" type="number" min="1" step="50" value="300"></label>
+   </div>
+   <div class="rb-tools"><button type="button" id="rbGenerate">저가 우선 120장 자동 추천</button><button type="button" id="rbCopyList">현재 목록 복사</button></div>
+   <div id="rbBuilderSummary" class="rb-builder-summary">자동 추천을 누르면 카드 그림과 가격이 표시됩니다. 가격 상한을 넘는 카드는 자동으로 넣지 않습니다.</div>
+   <div id="rbPicker" class="rb-picker" hidden>
+    <b id="rbPickerTitle">교체할 카드 선택</b>
+    <div class="rb-tools"><button type="button" id="rbSwapRandom">저가 후보로 자동 교체</button><button type="button" id="rbSwapClose">교체 닫기</button></div>
+    <div id="rbCandidates" class="rb-cards"></div>
+   </div>
+   <div id="rbCards"></div>
+   <details><summary>텍스트 목록 보기 · 직접 수정</summary>
+   <p class="rb-note">한 줄에 카드 코드와 수량. 예: OGN-001-NORMAL,1</p>
+   <textarea id="rbList" placeholder="자동 추천 목록이 여기에 반영됩니다."></textarea></details>
+   <div id="rbPreview" class="rb-preview">자동 추천 또는 목록 입력 후 구성을 확인해 주세요.</div>
+   <button type="button" id="rbConfirm" disabled>검증 후 판매 완료·재고 차감</button>
+   <p class="rb-note">상품의 등급별 구성·중복·실제 재고를 확인합니다. 실물 준비와 입금 확인 후 최종 확정하세요.</p>
   </section>
   <section class="rb-pane rb-full"><b>처리 결과 및 최근 판매</b><div id="rbMessage" class="rb-preview" role="status"></div><div id="rbHistory" class="rb-note"></div></section>
  </div></div>
@@ -3047,15 +3082,150 @@ function rbValidate(){
   }
   const fields=[["alt","알터"],["epic","에픽"],["rare","레어"],["foil","포일"],["normal","일반"]];
   const match=fields.every(([k])=>counters[k]===Number(p.slots?.[k]||0));
-  const ok=match&&!counters.other&&!short.length;
+  const identities=items.map(x=>rbIdentity(cards.find(c=>c.code===x.code)));
+  const duplicates=items.some(x=>x.qty!==1)||new Set(identities).size!==identities.length;
+  const aboveCap=items.some(x=>{const c=cards.find(c=>c.code===x.code);return rbKind(c)==="other"||Number(c.sell_price)<=0||Number(c.sell_price)>rbCap(rbKind(c));});
+  const ok=match&&!counters.other&&!short.length&&!aboveCap;
+  $("#rbConfirm").disabled=!ok||rbBusy||Number(p.stock_qty)<1;
   pre.textContent="총 "+rbTotal(items)+"장 / "+items.length+"종\n"+fields.map(([k,v])=>v+" "+counters[k]+"/"+Number(p.slots?.[k]||0)).join(" · ") +
    (counters.other?"\n대상 외 "+counters.other+"장":"") + (short.length?"\n재고 부족: "+short.join(", "):"")+
    "\n"+(ok?"구성/재고 검증 완료":"구성/재고 확인 필요")+
-   (items.some(x=>x.qty>1)?" · 중복 "+items.filter(x=>x.qty>1).length+"종 포함":"");
+   (duplicates?" · 같은 카드 중복 있음":"")+(aboveCap?" · 가격 상한 초과 또는 가격 미등록":"");
   pre.style.color=ok?"#166534":"#9a3412";
   return ok;
- }catch(e){pre.textContent=e.message;pre.style.color="#9a3412";return false;}
+ }catch(e){pre.textContent=e.message;pre.style.color="#9a3412";$("#rbConfirm").disabled=true;return false;}
 }
+
+const rbKinds=[["alt","알터"],["epic","에픽"],["rare","레어"],["foil","C/UC 포일"],["normal","일반"]];
+let rbSwapCode=null;
+const rbIdentity=c=>String(c.card_no||c.code).replace(/\s*\(KR\)/gi,"").replace(/-(NORMAL|FOIL)$/i,"").trim().toLowerCase();
+const rbAvailable=c=>Math.max(0,Math.min(Number(c.sell_qty||0),Number(c.total_qty||0)-(c.sale_enabled?0:1)));
+function rbCap(kind){
+ const n=Number($("#rbCap_"+kind).value);
+ if(!Number.isSafeInteger(n)||n<1)throw Error("등급별 가격 상한을 1원 이상의 정수로 입력해 주세요.");
+ return n;
+}
+function rbPool(kind,used){
+ const cap=rbCap(kind);
+ return cards.filter(c=>rbKind(c)===kind&&rbAvailable(c)>0&&Number(c.sell_price)>0&&Number(c.sell_price)<=cap&&!used.has(rbIdentity(c)));
+}
+function rbRecordedSold(c){return soldCountsReady?Number(soldByCode[c.code]||0):0;}
+function rbCheapShuffle(list){
+ return list.map(c=>({c,r:Math.random()})).sort((a,b)=>Number(a.c.sell_price)-Number(b.c.sell_price)||rbRecordedSold(a.c)-rbRecordedSold(b.c)||rbAvailable(b.c)-rbAvailable(a.c)||a.r-b.r).map(x=>x.c);
+}
+function rbDuplicatePool(kind,counts){
+ return rbPool(kind,new Set()).filter(c=>rbAvailable(c)>(counts.get(c.code)||0))
+ .map(c=>({c,r:Math.random()})).sort((a,b)=>rbRecordedSold(a.c)-rbRecordedSold(b.c)||
+ (rbAvailable(b.c)-(counts.get(b.c.code)||0))-(rbAvailable(a.c)-(counts.get(a.c.code)||0))||
+ Number(a.c.sell_price)-Number(b.c.sell_price)||a.r-b.r).map(x=>x.c);
+}
+function rbBuildRecommendation(){
+ const p=rbPick();if(!p)throw Error("상품을 선택해 주세요.");
+ rbKinds.forEach(([k])=>rbCap(k));
+ const used=new Set(),result=[],short=[],counts=new Map();
+ // First pass across every group: maximize distinct card identities.
+ for(const [kind] of rbKinds){
+  const needed=Number(p.slots?.[kind]||0);let count=0;
+  for(const c of rbCheapShuffle(rbPool(kind,used))){
+   if(count>=needed)break;
+   if(used.has(rbIdentity(c)))continue;
+   result.push({code:c.code,qty:1});counts.set(c.code,1);used.add(rbIdentity(c));count++;
+  }
+ }
+ // Only fill a group's missing slots after the unique pass is complete.
+ for(const [kind,label] of rbKinds){
+  const needed=Number(p.slots?.[kind]||0);
+  let count=result.filter(x=>rbKind(cards.find(c=>c.code===x.code))===kind).reduce((n,x)=>n+x.qty,0);
+  while(count<needed){
+   const c=rbDuplicatePool(kind,counts)[0];if(!c)break;
+   const entry=result.find(x=>x.code===c.code);
+   if(entry)entry.qty++;else result.push({code:c.code,qty:1});
+   counts.set(c.code,(counts.get(c.code)||0)+1);count++;
+  }
+  if(count<needed)short.push(label+" "+(needed-count)+"장 부족");
+ }
+ return {items:result,short};
+}
+function rbCardTile(c,attribute,qty=1){
+ return '<button type="button" class="rb-card" '+attribute+'="'+esc(c.code)+'" aria-label="'+esc(c.name_ko)+' 교체">'+ih(c)+
+ '<b>'+esc(c.name_ko)+'</b><small>'+esc(c.card_no)+' · '+esc(c.finish)+'</small>'+
+ '<strong>'+won(c.sell_price)+(qty>1?' ×'+qty:'')+'</strong><small>재고 '+rbAvailable(c)+'장 · 클릭하여 선택</small></button>';
+}
+function rbRenderCards(){
+ const host=$("#rbCards"),summary=$("#rbBuilderSummary");
+ try{
+  const items=rbParse(),selected=items.map(x=>({c:cards.find(c=>c.code===x.code),qty:x.qty}));
+  const total=selected.reduce((n,x)=>n+Number(x.c.sell_price||0)*x.qty,0);
+  const unique=new Set(selected.map(x=>rbIdentity(x.c))).size;
+  const duplicateQty=rbTotal(items)-unique;
+  summary.textContent= "선택 "+rbTotal(items)+"장 · "+unique+"종 · 중복 추가 "+duplicateQty+"장 · 개별 등록가 합계 "+won(total)+" / 묶음 판매가 "+won(rbPick()?.price||0)+"\n카드를 클릭하면 같은 등급의 대체 후보가 나옵니다. 두 금액은 별도 기준입니다.";
+  host.innerHTML=rbKinds.map(([k,label])=>{
+   const group=selected.filter(x=>rbKind(x.c)===k);
+   return '<div class="rb-kind-head">'+label+' '+group.reduce((n,x)=>n+x.qty,0)+' / '+Number(rbPick()?.slots?.[k]||0)+'장</div><div class="rb-cards">'+group.map(x=>rbCardTile(x.c,"data-rb-replace",x.qty)).join("")+'</div>';
+  }).join("");
+ }catch(e){host.innerHTML="";summary.textContent=e.message;}
+}
+function rbSync(items){
+ $("#rbList").value=items.map(x=>x.code+","+x.qty).join("\n");
+ rbClosePicker();rbRenderCards();rbValidate();
+}
+function rbClosePicker(){rbSwapCode=null;$("#rbPicker").hidden=true;}
+function rbReplacementPool(code){
+ const items=rbParse(),current=cards.find(c=>c.code===code);
+ if(!current)return [];
+ const remaining=items.map(x=>({code:x.code,qty:x.qty-(x.code===code?1:0)})).filter(x=>x.qty>0);
+ const used=new Set(remaining.map(x=>rbIdentity(cards.find(c=>c.code===x.code))));
+ const counts=new Map(remaining.map(x=>[x.code,x.qty]));
+ const unique=rbCheapShuffle(rbPool(rbKind(current),used).filter(c=>c.code!==code));
+ if(unique.length)return unique;
+ return rbDuplicatePool(rbKind(current),counts).filter(c=>c.code!==code);
+}
+function rbOpenPicker(code){
+ if(rbBusy)return;
+ rbSwapCode=code;const current=cards.find(c=>c.code===code);
+ $("#rbPicker").hidden=false;
+ $("#rbPickerTitle").textContent=current.name_ko+" → 같은 등급 1장 교체 (중복 없는 후보 우선)";
+ try{
+  const pool=rbReplacementPool(code);
+  $("#rbCandidates").innerHTML=pool.length?pool.map(c=>rbCardTile(c,"data-rb-candidate")).join(""):"가격 상한 안에서 교체 가능한 재고가 없습니다.";
+  $("#rbSwapRandom").disabled=!pool.length;
+ }catch(e){$("#rbCandidates").textContent=e.message;$("#rbSwapRandom").disabled=true;}
+ $("#rbPicker").scrollIntoView({behavior:"smooth",block:"nearest"});
+}
+function rbReplaceWith(code){
+ if(rbBusy||!rbSwapCode)return;
+ try{
+  const candidate=rbReplacementPool(rbSwapCode).find(c=>c.code===code);
+  if(!candidate)throw Error("현재 재고·가격 상한·중복 조건에 맞지 않는 카드입니다.");
+  const items=rbParse().map(x=>({...x,qty:x.qty-(x.code===rbSwapCode?1:0)})).filter(x=>x.qty>0);
+  const existing=items.find(x=>x.code===code);if(existing)existing.qty++;else items.push({code,qty:1});
+  rbSync(items);rbMessage("카드를 교체했어요. 최종 확정 전까지 재고는 그대로입니다.");
+ }catch(e){rbMessage(e.message);}
+}
+$("#rbGenerate").addEventListener("click",async()=>{
+ if(rbBusy)return;
+ if(dirty.size)return rbMessage("먼저 카드 관리 화면의 변경사항을 저장해 주세요.");
+ if($("#rbList").value.trim()&&!confirm("현재 추천 목록을 새로 만들까요? 교체한 내용도 초기화됩니다."))return;
+ rbBusy=true;$("#rbGenerate").disabled=true;$("#rbConfirm").disabled=true;
+ try{
+  const {data,error}=await S.from("cards").select("*").order("sort_no",{ascending:true});
+  if(error)throw error;
+  cards=(data||[]).map(x=>({...x,total_qty:Number(x.total_qty??x.sell_qty??0),sale_enabled:Boolean(x.sale_enabled)}));
+  await loadCardSoldCounts(true);
+  const result=rbBuildRecommendation();rbSync(result.items);
+  rbMessage((soldCountsReady?"":"판매 기록 조회 실패: 판매량 기준 없이 저가·재고 기준으로 추천했습니다. ")+(result.short.length?result.short.join(" · ")+" — 가격 상한 안의 전체 재고가 부족합니다. 가격 상한을 조절한 뒤 다시 추천해 주세요.":"추천 완료. 중복 없이 먼저 채우고 부족분은 판매량 적음·재고 많음 순으로 보충했어요. 이미지를 눌러 1장씩 교체할 수 있습니다."));
+ }catch(e){rbMessage("추천 실패: "+e.message);}
+ finally{rbBusy=false;$("#rbGenerate").disabled=false;rbValidate();}
+});
+$("#rbCards").addEventListener("click",e=>{const b=e.target.closest("[data-rb-replace]");if(b)rbOpenPicker(b.dataset.rbReplace);});
+$("#rbCandidates").addEventListener("click",e=>{const b=e.target.closest("[data-rb-candidate]");if(b)rbReplaceWith(b.dataset.rbCandidate);});
+$("#rbSwapClose").addEventListener("click",rbClosePicker);
+$("#rbSwapRandom").addEventListener("click",()=>{try{const pool=rbReplacementPool(rbSwapCode);if(pool.length)rbReplaceWith(pool[0].code);}catch(e){rbMessage(e.message);}});
+$("#rbCopyList").addEventListener("click",async()=>{
+ try{const items=rbParse();if(!items.length)return rbMessage("먼저 카드를 추천해 주세요.");const text=items.map(x=>{const c=cards.find(c=>c.code===x.code);return c.card_no+" "+c.name_ko+" ["+c.finish+"] ×"+x.qty;}).join("\n");try{await navigator.clipboard.writeText(text);rbMessage("실물 준비용 목록을 복사했어요.");}catch{prompt("목록 복사",text);}}catch(e){rbMessage(e.message);}
+});
+rbKinds.forEach(([k])=>$("#rbCap_"+k).addEventListener("input",()=>{rbClosePicker();rbValidate();}));
+
 $("#openRandomManagerBtn")?.addEventListener("click",()=>{
  $("#rbOverlay").classList.add("show");$("#rbOverlay").setAttribute("aria-hidden","false");
  document.body.style.overflow="hidden";rbMessage("");rbLoad();
@@ -3063,8 +3233,8 @@ $("#openRandomManagerBtn")?.addEventListener("click",()=>{
 function rbClose(){ $("#rbOverlay").classList.remove("show");$("#rbOverlay").setAttribute("aria-hidden","true");document.body.style.overflow="";}
 $("#rbClose")?.addEventListener("click",rbClose);
 $("#rbOverlay")?.addEventListener("click",e=>{if(e.target.id==="rbOverlay")rbClose();});
-$("#rbProduct")?.addEventListener("change",()=>{rbDisplay();rbValidate();});
-$("#rbList")?.addEventListener("input",rbValidate);
+$("#rbProduct")?.addEventListener("change",()=>{rbDisplay();rbSync([]);});
+$("#rbList")?.addEventListener("input",()=>{rbClosePicker();rbRenderCards();rbValidate();});
 $("#rbSave")?.addEventListener("click",async()=>{
  const p=rbPick();if(!p||rbBusy)return;
  const price=Number($("#rbPrice").value),stock=Number($("#rbStock").value);
@@ -3081,18 +3251,19 @@ $("#rbConfirm")?.addEventListener("click",async()=>{
  const p=rbPick();if(!p||rbBusy)return;
  if(!rbValidate())return rbMessage("등급별 구성과 재고를 확인해 주세요.");
  const items=rbParse();
- const yes=await askAction({title:"랜덤박스 판매 완료",message:"실제 카드 "+rbTotal(items)+"장 및 박스 재고 1개를 차감합니다. 취소할 수 없습니다. 계속할까요?",okText:"확정 · 재고 차감"});
- if(!yes)return;
  rbBusy=true;$("#rbConfirm").disabled=true;
  try{
+  const yes=await askAction({title:"랜덤박스 판매 완료",message:"실물 준비와 입금을 확인했나요? 실제 카드 "+rbTotal(items)+"장 및 박스 재고 1개를 차감합니다. 취소할 수 없습니다.",okText:"확정 · 재고 차감"});
+  if(!yes)return;
   const {data,error}=await S.rpc("fulfill_random_box",{p_product_id:p.id,p_items:items});
   if(error)throw error;
-  $("#rbList").value="";
+  rbSync([]);
   rbMessage("판매 완료 #"+data+" · 카드 "+rbTotal(items)+"장 및 박스 1개 차감 완료");
   await loadCards();await rbLoad();
  }catch(e){rbMessage("처리 실패: "+e.message);}
- finally{rbBusy=false;$("#rbConfirm").disabled=false;}
+ finally{rbBusy=false;rbValidate();}
 });
+
 
 check();
 </script>
