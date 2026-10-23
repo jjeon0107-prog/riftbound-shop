@@ -1060,6 +1060,23 @@ body.orders-open{overflow:hidden!important}
 
 .promo-card{outline:2px solid #111827;outline-offset:-2px}
 #promoQuickBtn{white-space:nowrap;font-weight:900}
+
+.rb-overlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(12,22,39,.7);z-index:1200;padding:12px}
+.rb-overlay.show{display:flex}
+.rb-box{width:min(860px,100%);max-height:94dvh;overflow:auto;background:#fff;border-radius:14px}
+.rb-bar{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid #e0e5ed}
+.rb-main{padding:12px;display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.rb-pane{border:1px solid #dce2e9;padding:13px;border-radius:10px;min-width:0}
+.rb-pane label{display:block;margin-top:10px;font-size:12px;font-weight:800;color:#48556b}
+.rb-pane input:not([type="checkbox"]),.rb-pane select,.rb-pane textarea{display:block;width:100%;padding:9px;border:1px solid #ced5df;border-radius:8px;box-sizing:border-box}
+.rb-pane textarea{height:220px;resize:vertical;font:12px/1.6 monospace}
+.rb-pane button{margin-top:9px;padding:11px;border:0;border-radius:8px;background:#182f50;color:white;font-weight:850}
+.rb-pane button:disabled{opacity:.5}
+.rb-note{font-size:11px;color:#667085;line-height:1.65}
+.rb-preview{white-space:pre-line;font-size:12px;line-height:1.7;margin-top:8px}
+.rb-full{grid-column:1/-1}
+@media(max-width:650px){.rb-overlay{padding:0}.rb-box{height:100dvh;max-height:100dvh;border-radius:0}.rb-main{grid-template-columns:1fr}.rb-full{grid-column:auto}}
+
 </style>
 </head>
 <body>
@@ -1195,6 +1212,7 @@ onclick="const p=document.getElementById('managePanel');const opening=!p.classLi
   <button id="openDeckManagerBtn" style="width:100%;font-weight:900;min-height:42px">
     추천 덱 관리
   </button>
+  <button id="openRandomManagerBtn" style="width:100%;min-height:42px;font-weight:900;grid-column:1/-1">랜덤박스 상품·판매 관리</button>
 </div>
 
 <div id="bulk" class="bulk controls-section">
@@ -1255,6 +1273,32 @@ onclick="const p=document.getElementById('managePanel');const opening=!p.classLi
   <div style="height:80px"></div>
 </main>
 
+
+
+<div id="rbOverlay" class="rb-overlay" aria-hidden="true">
+ <div class="rb-box" role="dialog" aria-modal="true" aria-labelledby="rbHeading">
+ <div class="rb-bar"><b id="rbHeading">랜덤박스 관리</b><button id="rbClose" type="button">닫기</button></div>
+ <div class="rb-main">
+  <section class="rb-pane">
+   <b>상품 설정</b>
+   <label>상품 선택</label><select id="rbProduct"></select>
+   <label>판매가격(원)</label><input id="rbPrice" type="number" min="0">
+   <label>판매가능 박스(개)</label><input id="rbStock" type="number" min="0">
+   <label><input id="rbActive" type="checkbox"> 판매 페이지 노출</label>
+   <button type="button" id="rbSave">상품 설정 저장</button>
+   <p class="rb-note">판매 완료 등록 시 박스 수량은 자동으로 1 감소합니다.</p>
+  </section>
+  <section class="rb-pane">
+   <b>판매 완료 · 실제 카드 재고 차감</b>
+   <p class="rb-note">한 줄에 카드 코드와 수량을 입력하세요. 예: OGN-001-NORMAL,2<br>수량 생략 시 1장. 동일 코드는 수량을 합산합니다.</p>
+   <textarea id="rbList" placeholder="OGN-039a-FOIL,1&#10;OGN-080-FOIL,1&#10;OGN-001-NORMAL,2"></textarea>
+   <div id="rbPreview" class="rb-preview">카드 리스트를 입력하면 검증 결과가 표시됩니다.</div>
+   <button type="button" id="rbConfirm">검증 후 판매 완료·재고 차감</button>
+   <p class="rb-note">알터 1, 에픽 3, 레어 10, C/UC 포일 10, 일반 96장 일치 시에만 처리됩니다. 바인더 보관 1장은 제외합니다. 실행 취소는 지원하지 않습니다.</p>
+  </section>
+  <section class="rb-pane rb-full"><b>처리 결과 및 최근 판매</b><div id="rbMessage" class="rb-preview" role="status"></div><div id="rbHistory" class="rb-note"></div></section>
+ </div></div>
+</div>
 
 <div id="deckManagerModal" class="deck-modal" aria-hidden="true">
   <div class="deck-modal-sheet">
@@ -2942,6 +2986,112 @@ document.addEventListener("change",e=>{
   c.sell_price=u2k(e.target.value);
   dirty.add(c.code);
   saveCodes([c.code],false);
+});
+
+
+/* Random-box admin: product settings + exact-list stock fulfillment */
+let rbRows=[], rbBusy=false;
+const rbPick=()=>rbRows.find(p=>String(p.id)===$("#rbProduct").value);
+const rbMessage=(v)=>{$("#rbMessage").textContent=v;};
+const rbTotal=items=>items.reduce((a,x)=>a+x.qty,0);
+async function rbLoad(){
+ const [p,h]=await Promise.all([
+  S.from("random_box_products").select("id,name,price,stock_qty,active,slots").order("id"),
+  S.from("random_box_sales").select("id,product_name,paid_price,items,created_at").order("id",{ascending:false}).limit(15)
+ ]);
+ if(p.error){rbMessage(p.error.message);return;}
+ rbRows=p.data||[];
+ const sel=$("#rbProduct"),old=sel.value;
+ sel.innerHTML=rbRows.map(x=>'<option value="'+Number(x.id)+'">'+esc(x.name)+'</option>').join("");
+ if(rbRows.some(x=>String(x.id)===old))sel.value=old;
+ rbDisplay();
+ $("#rbHistory").innerHTML=h.error?esc(h.error.message):(h.data||[]).map(x=>
+  '<div style="padding:5px 0;border-top:1px solid #eceef2">#'+x.id+' · '+esc(x.product_name)+' · '+won(x.paid_price)+' · '+rbTotal(x.items||[])+'장 · '+new Date(x.created_at).toLocaleString("ko-KR")+'</div>'
+ ).join("")||"판매 내역 없음";
+ rbValidate();
+}
+function rbDisplay(){
+ const p=rbPick();if(!p)return;
+ $("#rbPrice").value=p.price;$("#rbStock").value=p.stock_qty;$("#rbActive").checked=!!p.active;
+}
+function rbParse(){
+ const lines=$("#rbList").value.split(/\r?\n/).map(x=>x.trim()).filter(x=>x&&!x.startsWith("#")),map=new Map();
+ for(let i=0;i<lines.length;i++){
+  const m=/^([a-z0-9-]+)(?:[\s,;]+(?:x\s*)?(\d+))?$/i.exec(lines[i]);
+  if(!m)throw Error((i+1)+"행 입력 형식을 확인해 주세요: "+lines[i]);
+  const c=cards.find(c=>String(c.code).toLowerCase()===m[1].toLowerCase());
+  if(!c)throw Error("존재하지 않는 코드: "+m[1]);
+  const n=m[2]?Number(m[2]):1;
+  if(!Number.isSafeInteger(n)||n<1||n>120)throw Error("수량 오류: "+lines[i]);
+  map.set(c.code,(map.get(c.code)||0)+n);
+ }
+ return [...map].map(([code,qty])=>({code,qty}));
+}
+function rbKind(c){
+ if(c.rarity==="Showcase"&&c.variant==="Alt Art")return "alt";
+ if(c.rarity==="Epic"&&c.variant==="Standard")return "epic";
+ if(c.rarity==="Rare"&&c.variant==="Standard")return "rare";
+ if(["Common","Uncommon"].includes(c.rarity)&&c.variant==="Standard")return c.finish==="FOIL"?"foil":"normal";
+ return "other";
+}
+function rbValidate(){
+ const p=rbPick();if(!p)return false;
+ const pre=$("#rbPreview");
+ try{
+  const items=rbParse(),counters={alt:0,epic:0,rare:0,foil:0,normal:0,other:0},short=[];
+  for(const x of items){
+   const c=cards.find(c=>c.code===x.code);
+   counters[rbKind(c)]+=x.qty;
+   const available=Math.max(0,Math.min(Number(c.sell_qty||0),Number(c.total_qty||0)-(c.sale_enabled?0:1)));
+   if(available<x.qty)short.push(x.code+"("+available+"/"+x.qty+")");
+  }
+  const fields=[["alt","알터"],["epic","에픽"],["rare","레어"],["foil","포일"],["normal","일반"]];
+  const match=fields.every(([k])=>counters[k]===Number(p.slots?.[k]||0));
+  const ok=match&&!counters.other&&!short.length;
+  pre.textContent="총 "+rbTotal(items)+"장 / "+items.length+"종\n"+fields.map(([k,v])=>v+" "+counters[k]+"/"+Number(p.slots?.[k]||0)).join(" · ") +
+   (counters.other?"\n대상 외 "+counters.other+"장":"") + (short.length?"\n재고 부족: "+short.join(", "):"")+
+   "\n"+(ok?"구성/재고 검증 완료":"구성/재고 확인 필요")+
+   (items.some(x=>x.qty>1)?" · 중복 "+items.filter(x=>x.qty>1).length+"종 포함":"");
+  pre.style.color=ok?"#166534":"#9a3412";
+  return ok;
+ }catch(e){pre.textContent=e.message;pre.style.color="#9a3412";return false;}
+}
+$("#openRandomManagerBtn")?.addEventListener("click",()=>{
+ $("#rbOverlay").classList.add("show");$("#rbOverlay").setAttribute("aria-hidden","false");
+ document.body.style.overflow="hidden";rbMessage("");rbLoad();
+});
+function rbClose(){ $("#rbOverlay").classList.remove("show");$("#rbOverlay").setAttribute("aria-hidden","true");document.body.style.overflow="";}
+$("#rbClose")?.addEventListener("click",rbClose);
+$("#rbOverlay")?.addEventListener("click",e=>{if(e.target.id==="rbOverlay")rbClose();});
+$("#rbProduct")?.addEventListener("change",()=>{rbDisplay();rbValidate();});
+$("#rbList")?.addEventListener("input",rbValidate);
+$("#rbSave")?.addEventListener("click",async()=>{
+ const p=rbPick();if(!p||rbBusy)return;
+ const price=Number($("#rbPrice").value),stock=Number($("#rbStock").value);
+ if(!Number.isSafeInteger(price)||price<0||!Number.isSafeInteger(stock)||stock<0)return rbMessage("가격/수량은 0 이상의 정수로 입력해 주세요.");
+ rbBusy=true;$("#rbSave").disabled=true;
+ try{
+  const {error}=await S.from("random_box_products").update({price,stock_qty:stock,active:$("#rbActive").checked,updated_at:new Date().toISOString()}).eq("id",p.id);
+  if(error)throw error;
+  rbMessage("상품 설정 저장 완료");await rbLoad();
+ }catch(e){rbMessage("저장 실패: "+e.message);}
+ finally{rbBusy=false;$("#rbSave").disabled=false;}
+});
+$("#rbConfirm")?.addEventListener("click",async()=>{
+ const p=rbPick();if(!p||rbBusy)return;
+ if(!rbValidate())return rbMessage("등급별 구성과 재고를 확인해 주세요.");
+ const items=rbParse();
+ const yes=await askAction({title:"랜덤박스 판매 완료",message:"실제 카드 "+rbTotal(items)+"장 및 박스 재고 1개를 차감합니다. 취소할 수 없습니다. 계속할까요?",okText:"확정 · 재고 차감"});
+ if(!yes)return;
+ rbBusy=true;$("#rbConfirm").disabled=true;
+ try{
+  const {data,error}=await S.rpc("fulfill_random_box",{p_product_id:p.id,p_items:items});
+  if(error)throw error;
+  $("#rbList").value="";
+  rbMessage("판매 완료 #"+data+" · 카드 "+rbTotal(items)+"장 및 박스 1개 차감 완료");
+  await loadCards();await rbLoad();
+ }catch(e){rbMessage("처리 실패: "+e.message);}
+ finally{rbBusy=false;$("#rbConfirm").disabled=false;}
 });
 
 check();
