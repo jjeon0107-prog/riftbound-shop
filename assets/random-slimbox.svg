@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="900" viewBox="0 0 1200 900" role="img" aria-label="리프트바운드 오리진 랜덤 슬림박스 120장, 중복 최소화">
+<defs>
+<linearGradient id="bg" x2="1" y2="1"><stop stop-color="#101d34"/><stop offset="1" stop-color="#283752"/></linearGradient>
+<linearGradient id="gold" x2="1"><stop stop-color="#e8c786"/><stop offset="1" stop-color="#b99557"/></linearGradient>
+<filter id="sh" x="-40%" y="-40%" width="180%" height="180%"><feDropShadow dx="0" dy="16" stdDeviation="19" flood-opacity=".35"/></filter>
+</defs>
+<rect width="1200" height="900" fill="url(#bg)"/>
+<path d="M0 0h1200v900H0z" fill="none" stroke="#bd9a66" stroke-opacity=".33" stroke-width="18"/>
+<path d="M55 110h1090M55 775h1090" stroke="#c9ae78" stroke-width="2" opacity=".44"/>
+<text x="70" y="83" fill="#cbb57d" font-size="31" font-family="Arial,sans-serif" font-weight="700" letter-spacing="5">RIFTBOUND  /  ORIGIN</text>
+<text x="70" y="204" fill="#f8f6f0" font-size="70" font-family="Noto Sans KR,Arial,sans-serif" font-weight="800">랜덤 슬림박스</text>
+<text x="70" y="347" fill="#f2d497" font-size="136" font-family="Arial,sans-serif" font-weight="900">120</text>
+<text x="378" y="340" fill="#f4eee2" font-size="55" font-family="Noto Sans KR,Arial,sans-serif" font-weight="800">장 구성</text>
+<rect x="70" y="399" width="480" height="66" rx="12" fill="#e6d0aa"/>
+<text x="310" y="443" text-anchor="middle" fill="#1d2940" font-size="32" font-family="Noto Sans KR,Arial,sans-serif" font-weight="800">최대한 중복 없이 선별</text>
+<g filter="url(#sh)">
+<g transform="translate(682 240) rotate(-17 150 220)"><rect width="295" height="420" rx="16" fill="#1b3350" stroke="#dbc58a" stroke-width="10"/><rect x="19" y="19" width="257" height="382" rx="10" stroke="#9aaac3" stroke-width="2" fill="none"/><path d="M147 97l77 110-77 110-77-110z" fill="none" stroke="#d1b47f" stroke-width="9"/><circle cx="147" cy="205" r="44" fill="#bfa576"/></g>
+<g transform="translate(811 220) rotate(-1 150 220)"><rect width="295" height="420" rx="16" fill="#243553" stroke="#c7af84" stroke-width="10"/><rect x="19" y="19" width="257" height="382" rx="10" stroke="#9aaac3" stroke-width="2" fill="none"/><path d="M147 95l76 116-76 113-76-113z" fill="none" stroke="#c7a970" stroke-width="9"/><circle cx="147" cy="210" r="40" fill="#d4b478"/></g>
+</g>
+<text x="75" y="565" fill="#e7e9ef" font-size="32" font-family="Noto Sans KR,Arial,sans-serif" font-weight="750">알터 1 · 에픽 3 · 레어 10</text>
+<text x="75" y="626" fill="#e7e9ef" font-size="32" font-family="Noto Sans KR,Arial,sans-serif" font-weight="750">포일 10 · 일반 96</text>
+<rect x="55" y="785" width="1090" height="77" rx="13" fill="#f5f1e9"/>
+<text x="600" y="836" text-anchor="middle" fill="#27354d" font-size="31" font-family="Noto Sans KR,Arial,sans-serif" font-weight="750">보유 카드 랜덤 구성  ·  미개봉 박스 아님</text>
+</svg>
