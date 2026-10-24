@@ -1099,7 +1099,7 @@ body.orders-open{overflow:hidden!important}
 <body>
 <header class="top">
   <div class="head">
-    <h1>오리진 카드샵 관리자 <span style="font-size:11px;color:#64748b">v37 · 랜덤박스 균형 추첨</span></h1>
+    <h1>오리진 카드샵 관리자 <span style="font-size:11px;color:#64748b">v38 · 벌크팩 등록·구성관리</span></h1>
 
     <div id="loginPanel" class="panel">
       <div class="grid3">
@@ -1307,8 +1307,8 @@ onclick="const p=document.getElementById('managePanel');const opening=!p.classLi
   </section>
   <section class="rb-pane">
 
-   <b>120장 자동 추천 · 이미지로 교체</b>
-   <p class="rb-note">판매 후 아래에서 추천 목록을 만들고 실물을 준비하세요. 등급별 가격 상한 내 랜덤 추첨 · 상위 가격대 카드도 일부 포함 · 가능한 한 120장 모두 다른 카드로 구성 · 바인더 보관분 제외. 추천만으로는 재고가 차감되지 않습니다.</p>
+   <b id="rbDynamicTitle">랜덤 구성 · 카드 이미지로 교체</b>
+   <p class="rb-note">판매 후 구성 추천 및 실물 준비에 사용하세요. 설정된 가격 상한 내 랜덤 추첨 · 가능한 한 카드 중복 없이 구성 · 바인더 보관분 제외. 추천만으로는 재고가 차감되지 않습니다. 구매자에게 실제 추첨 리스트는 공개되지 않습니다.</p>
    <div class="rb-caps">
     <label>알터 상한(원)<input id="rbCap_alt" type="number" min="1" step="100" value="7000"></label>
     <label>에픽 상한(원)<input id="rbCap_epic" type="number" min="1" step="100" value="5000"></label>
@@ -1316,8 +1316,8 @@ onclick="const p=document.getElementById('managePanel');const opening=!p.classLi
     <label>포일 상한(원)<input id="rbCap_foil" type="number" min="1" step="100" value="1500"></label>
     <label>일반 상한(원)<input id="rbCap_normal" type="number" min="1" step="50" value="500"></label>
    </div>
-   <div class="rb-tools"><button type="button" id="rbGenerate">균형 랜덤 120장 생성</button><button type="button" id="rbCopyList">현재 목록 복사</button></div>
-   <div id="rbBuilderSummary" class="rb-builder-summary">균형 랜덤을 누르면 카드 이미지, 가격, 전체 개별 등록가와 14,900원 판매가의 차이가 표시됩니다.</div>
+   <div class="rb-tools"><button type="button" id="rbGenerate">랜덤 구성하기</button><button type="button" id="rbCopyList">현재 목록 복사</button></div>
+   <div id="rbBuilderSummary" class="rb-builder-summary">랜덤 구성하기를 누르면 카드 이미지·단가·개별 등록가 합계와 상품 판매가를 관리자에게만 표시합니다.</div>
    <div id="rbPicker" class="rb-picker" hidden>
     <b id="rbPickerTitle">교체할 카드 선택</b>
     <div class="rb-tools"><button type="button" id="rbSwapRandom">랜덤 후보로 교체</button><button type="button" id="rbSwapClose">교체 닫기</button></div>
@@ -3047,6 +3047,9 @@ async function rbLoad(){
 }
 function rbDisplay(){
  const p=rbPick();if(!p)return;
+ const count=Object.values(p.slots||{}).reduce((a,b)=>a+Number(b||0),0);
+ $("#rbDynamicTitle").textContent=p.name+" · 관리자 구성/카드 교체";
+ $("#rbGenerate").textContent="랜덤 "+count+"장 구성하기";
  $("#rbPrice").value=p.price;$("#rbStock").value=p.stock_qty;$("#rbActive").checked=!!p.active;
  rbKinds.forEach(([k])=>{const el=$("#rbCap_"+k);if(el)el.value=Number(p.price_caps?.[k]||({alt:7000,epic:5000,rare:1500,foil:1500,normal:500})[k]);});
 }
@@ -3081,7 +3084,7 @@ function rbValidate(){
    const available=Math.max(0,Math.min(Number(c.sell_qty||0),Number(c.total_qty||0)-(c.sale_enabled?0:1)));
    if(available<x.qty)short.push(x.code+"("+available+"/"+x.qty+")");
   }
-  const fields=[["alt","알터"],["epic","에픽"],["rare","레어"],["foil","포일"],["normal","일반"]];
+  const fields=[["alt","알터"],["epic","에픽"],["rare","레어"],["foil","포일"],["normal","일반"]].filter(([k])=>Number(p.slots?.[k]||0)>0);
   const match=fields.every(([k])=>counters[k]===Number(p.slots?.[k]||0));
   const identities=items.map(x=>rbIdentity(cards.find(c=>c.code===x.code)));
   const duplicates=items.some(x=>x.qty!==1)||new Set(identities).size!==identities.length;
@@ -3168,33 +3171,42 @@ function rbCardTile(c,attribute,qty=1){
  '<b>'+esc(c.name_ko)+'</b><small>'+esc(c.card_no)+' · '+esc(c.finish)+'</small>'+
  '<strong>'+won(c.sell_price)+(qty>1?' ×'+qty:'')+'</strong><small>재고 '+rbAvailable(c)+'장 · 클릭하여 선택</small></button>';
 }
+// Numerical card-number order is easier to pick and pack than generation order.
+function rbSortedItems(items){
+ return [...items].sort((a,b)=>{
+  const aCard=cards.find(c=>c.code===a.code),bCard=cards.find(c=>c.code===b.code);
+  const aNo=String(aCard?.card_no||a.code),bNo=String(bCard?.card_no||b.code);
+  return aNo.localeCompare(bNo,"ko-KR",{numeric:true,sensitivity:"base"}) ||
+    String(aCard?.finish||"").localeCompare(String(bCard?.finish||""));
+ });
+}
 function rbRenderCards(){
  const host=$("#rbCards"),summary=$("#rbBuilderSummary");
  try{
-  const items=rbParse(),selected=items.map(x=>({c:cards.find(c=>c.code===x.code),qty:x.qty}));
+  const items=rbSortedItems(rbParse()),selected=items.map(x=>({c:cards.find(c=>c.code===x.code),qty:x.qty}));
   const total=selected.reduce((n,x)=>n+Number(x.c.sell_price||0)*x.qty,0);
   const unique=new Set(selected.map(x=>rbIdentity(x.c))).size;
   const duplicateQty=rbTotal(items)-unique;
   const sellPrice=Number(rbPick()?.price||0);
   const rate=total>0?Math.round((1-sellPrice/total)*1000)/10:0;
-  const categoryRows=rbKinds.map(([k,label])=>{
+  const categoryRows=rbKinds.filter(([k])=>Number(rbPick()?.slots?.[k]||0)>0).map(([k,label])=>{
    const rows=selected.filter(x=>rbKind(x.c)===k);
    return label+" "+rows.reduce((v,x)=>v+x.qty,0)+"장 · "+won(rows.reduce((v,x)=>v+x.qty*Number(x.c.sell_price||0),0));
   });
   summary.textContent="총 "+rbTotal(items)+"장 / "+unique+"종 · 중복 추가 "+duplicateQty+"장\n"+
-    "120장 개별 등록가 합계: "+won(total)+"\n"+
+    "개별 등록가 합계: "+won(total)+"\n"+
     "랜덤박스 실제 판매가: "+won(sellPrice)+"\n"+
     (total>=sellPrice?"표시가 기준 차액 "+won(total-sellPrice)+" · "+rate+"% 할인":"표시가 기준 판매가가 "+won(sellPrice-total)+"원 더 높음")+
     "\n"+categoryRows.join("  |  ")+
     "\n※ 개별 등록가 합계는 현재 사이트 표시가 기준이며, 실제 거래 시세 또는 회수 가능 금액을 보장하지 않습니다. 카드를 클릭하면 개별 교체할 수 있습니다.";
-  host.innerHTML=rbKinds.map(([k,label])=>{
+  host.innerHTML=rbKinds.filter(([k])=>Number(rbPick()?.slots?.[k]||0)>0).map(([k,label])=>{
    const group=selected.filter(x=>rbKind(x.c)===k);
    return '<div class="rb-kind-head">'+label+' '+group.reduce((n,x)=>n+x.qty,0)+' / '+Number(rbPick()?.slots?.[k]||0)+'장</div><div class="rb-cards">'+group.map(x=>rbCardTile(x.c,"data-rb-replace",x.qty)).join("")+'</div>';
   }).join("");
  }catch(e){host.innerHTML="";summary.textContent=e.message;}
 }
 function rbSync(items){
- $("#rbList").value=items.map(x=>x.code+","+x.qty).join("\n");
+ $("#rbList").value=rbSortedItems(items).map(x=>x.code+","+x.qty).join("\n");
  rbClosePicker();rbRenderCards();rbValidate();
 }
 function rbClosePicker(){rbSwapCode=null;$("#rbPicker").hidden=true;}
@@ -3250,7 +3262,9 @@ $("#rbCandidates").addEventListener("click",e=>{const b=e.target.closest("[data-
 $("#rbSwapClose").addEventListener("click",rbClosePicker);
 $("#rbSwapRandom").addEventListener("click",()=>{try{const pool=rbReplacementPool(rbSwapCode);if(pool.length)rbReplaceWith(rbShuffled(pool)[0].code);}catch(e){rbMessage(e.message);}});
 $("#rbCopyList").addEventListener("click",async()=>{
- try{const items=rbParse();if(!items.length)return rbMessage("먼저 카드를 추천해 주세요.");const text=items.map(x=>{const c=cards.find(c=>c.code===x.code);return c.card_no+" "+c.name_ko+" ["+c.finish+"] ×"+x.qty;}).join("\n");try{await navigator.clipboard.writeText(text);rbMessage("실물 준비용 목록을 복사했어요.");}catch{prompt("목록 복사",text);}}catch(e){rbMessage(e.message);}
+ try{const items=rbParse();if(!items.length)return rbMessage("먼저 카드를 추천해 주세요.");const sorted=rbSortedItems(items);const listPrice=sorted.reduce((v,x)=>{const c=cards.find(c=>c.code===x.code);return v+Number(c?.sell_price||0)*x.qty;},0);
+  const text=sorted.map(x=>{const c=cards.find(c=>c.code===x.code);return c.card_no+" "+c.name_ko+" ["+c.finish+"] ×"+x.qty+" · 단가 "+won(c.sell_price)+" / "+won(c.sell_price*x.qty);}).join("\n")+
+   "\n\n총 "+rbTotal(items)+"장 · 개별 등록가 합계 "+won(listPrice)+" · 벌크팩 판매가 "+won(rbPick()?.price||0);try{await navigator.clipboard.writeText(text);rbMessage("실물 준비용 목록을 복사했어요.");}catch{prompt("목록 복사",text);}}catch(e){rbMessage(e.message);}
 });
 rbKinds.forEach(([k])=>$("#rbCap_"+k).addEventListener("input",()=>{rbClosePicker();rbValidate();}));
 
