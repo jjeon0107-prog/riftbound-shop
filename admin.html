@@ -3085,7 +3085,7 @@ function rbValidate(){
    if(available<x.qty)short.push(x.code+"("+available+"/"+x.qty+")");
   }
   const fields=[["alt","알터"],["epic","에픽"],["rare","레어"],["foil","포일"],["normal","일반"]].filter(([k])=>Number(p.slots?.[k]||0)>0);
-  const match=fields.every(([k])=>counters[k]===Number(p.slots?.[k]||0));
+  const match=rbKinds.every(([k])=>counters[k]===Number(p.slots?.[k]||0));
   const identities=items.map(x=>rbIdentity(cards.find(c=>c.code===x.code)));
   const duplicates=items.some(x=>x.qty!==1)||new Set(identities).size!==identities.length;
   const aboveCap=items.some(x=>{const c=cards.find(c=>c.code===x.code);return rbKind(c)==="other"||Number(c.sell_price)<=0||Number(c.sell_price)>rbCap(rbKind(c));});
