@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="900" viewBox="0 0 1200 900">
+<defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#18283b"/><stop offset="1" stop-color="#17253b"/></linearGradient></defs>
+<rect width="1200" height="900" fill="url(#bg)"/>
+<path d="M50 75H1150M50 827H1150" stroke="#e4d2b0" stroke-width="3" opacity=".65"/>
+<text x="68" y="142" font-family="Arial,sans-serif" font-weight="700" font-size="31" letter-spacing="6" fill="#d5d5ce">RIFTBOUND  /  ORIGINS</text>
+<text x="68" y="252" font-family="Noto Sans KR,Apple SD Gothic Neo,Malgun Gothic,Arial,sans-serif" font-size="70" font-weight="900" fill="#fcfcf8">일반 벌크팩</text>
+<text x="68" y="427" font-family="Arial,sans-serif" font-size="178" font-weight="800" fill="#e4d2b0">100</text>
+<text x="490" y="415" font-family="Noto Sans KR,Malgun Gothic,Arial,sans-serif" font-size="68" font-weight="900" fill="#f9f8f5">장</text>
+<rect x="68" y="491" width="509" height="83" rx="13" fill="#e4d2b0"/>
+<text x="322" y="546" text-anchor="middle" font-family="Noto Sans KR,Malgun Gothic,Arial,sans-serif" font-size="34" font-weight="900" fill="#192739">최대한 중복 없이 구성</text>
+<text x="68" y="670" font-family="Noto Sans KR,Malgun Gothic,Arial,sans-serif" font-size="40" font-weight="700" fill="#e6eaf2">스타터 · 도감 채우기용</text>
+<text x="68" y="784" font-family="Arial,sans-serif" font-size="27" fill="#bfc7d1" letter-spacing="3">COMMON · UNCOMMON  /  NORMAL</text>
+<g transform="translate(806 250)">
+ <g transform="translate(-96 50) rotate(-19 140 240)"><rect x="0" y="0" width="290" height="402" rx="16" fill="#172034" stroke="#e4d2b0" stroke-width="7"/><rect x="18" y="18" width="254" height="366" rx="9" fill="none" stroke="#96a2b4" stroke-width="2"/><path d="M145 85L226 194L145 306L64 194z" fill="none" stroke="#e4d2b0" stroke-width="8"/></g>
+ <g transform="translate(50 4) rotate(4 140 240)"><rect width="290" height="402" rx="16" fill="#24334e" stroke="#e4d2b0" stroke-width="7"/><rect x="18" y="18" width="254" height="366" rx="9" fill="none" stroke="#96a2b4" stroke-width="2"/><path d="M145 85L226 194L145 306L64 194z" fill="none" stroke="#e4d2b0" stroke-width="8"/><circle cx="145" cy="194" r="42" fill="#e4d2b0" opacity=".75"/></g>
+</g>
+</svg>
