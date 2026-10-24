@@ -639,6 +639,20 @@ body.cart-open{
 }
 
 
+/* Each reference is the minimum individual-card listing total, not a historical bundle price. */
+.rb-price-comparison{display:flex;flex-direction:column;gap:4px;min-width:0}
+.rb-compare-original{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;font-size:12px;color:#757f8c;font-weight:600}
+.rb-compare-original small{font-size:10px;color:#78818d}
+.rb-compare-original s{text-decoration-thickness:1.5px}
+.rb-price-current{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.rb-price-current strong,.rb-selling-price{font-size:23px;font-weight:950;color:#172942}
+.rb-price-current em{font-style:normal;background:#fef1df;color:#98520a;border-radius:5px;padding:3px 5px;font-size:12px;font-weight:900;white-space:nowrap}
+.rb-compare-foot{font-size:10px;color:#697383;line-height:1.4;font-weight:500}
+.random-product-price>.rb-price-comparison{flex:1}
+.random-product-price>.rb-price-comparison .rb-price-current strong{font-size:19px}
+.random-product-price>.rb-price-comparison .rb-price-current em{font-size:11px}
+.random-detail-price .rb-price-current strong{font-size:30px}
+@media(max-width:600px){.random-product-price>.rb-price-comparison .rb-price-current strong{font-size:17px}.rb-compare-original{font-size:10px}.rb-compare-original small{font-size:9px}.random-product-price>.rb-price-comparison .rb-price-current em{font-size:10px}}
 /* Random slimbox product: square-ish listing and an accessible detail sheet. */
 .random-shop{margin:12px 0 17px}
 .random-shop-heading{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:9px}
@@ -926,7 +940,7 @@ body.random-modal-open{overflow:hidden}
   </div>
   <div style="height:90px"></div>
   <div class="sub" style="text-align:center;padding:12px 0 90px">
-    <span style="opacity:.45">build v35 RANDOM-SLIMBOX</span><br>
+    <span style="opacity:.45">build v38 BULK-DISCOUNT</span><br>
     <span id="footerText">카드 이미지 © Riot Games · 비공식 개인 판매 페이지</span>
   </div>
 </main>
@@ -2111,13 +2125,24 @@ const randomSlots = [
 ];
 async function loadRandomBoxes(){
   try{
-    const rows=await restGet("random_box_products?select=id,slug,name,description,price,stock_qty,slots,image_url&active=eq.true&order=id.asc");
+    const rows=await restGet("random_box_products?select=id,slug,name,description,price,stock_qty,slots,image_url,reference_price,reference_note&active=eq.true&order=id.asc");
     randomBoxProducts=Array.isArray(rows)?rows:[];
     renderRandomBoxes();
   }catch(err){
     console.warn("랜덤 상품을 불러오지 못했습니다:",err);
     document.querySelector("#randomShop").hidden=true;
   }
+}
+function randomPriceHtml(p,detail=false){
+ const price=Number(p.price||0),ref=Number(p.reference_price||0);
+ if(!(ref>price))return '<strong class="rb-selling-price">'+won(price)+'</strong>';
+ const discount=Math.round(100*(ref-price)/ref);
+ const note=esc(p.reference_note||"개별 카드 최저 등록가 합계");
+ return '<span class="rb-price-comparison">'+
+   '<span class="rb-compare-original"><small>개별 최저 등록가 합계</small> <s>'+won(ref)+'</s></span>'+
+   '<span class="rb-price-current"><strong>'+won(price)+'</strong><em>'+discount+'% 저렴</em></span>'+
+   (detail?'<span class="rb-compare-foot">'+note+' 기준 · 기존 벌크팩 판매가가 아닙니다.</span>':'')+
+   '</span>';
 }
 function renderRandomBoxes(){
   const section=document.querySelector("#randomShop");
@@ -2126,13 +2151,13 @@ function renderRandomBoxes(){
   section.hidden=!randomBoxProducts.length;
   list.innerHTML=randomBoxProducts.map(p=>{
     const slots=p.slots||{};
-    const parts=randomSlots.map(([k,label])=>label+" "+Number(slots[k]||0)+"장").join(" · ");
+    const parts=randomSlots.filter(([k])=>Number(slots[k]||0)>0).map(([k,label])=>label+" "+Number(slots[k]||0)+"장").join(" · ");
     const soldout=Number(p.stock_qty||0)<1;
     return '<button class="random-product" type="button" data-random-id="'+Number(p.id)+'">'+
-      '<span class="random-product-media"><img src="'+esc(p.image_url||"assets/random-slimbox.svg")+'" alt="오리진 랜덤 슬림박스 120장" loading="lazy"></span>'+
+      '<span class="random-product-media"><img src="'+esc(p.image_url||"assets/random-slimbox.svg")+'" alt="'+esc(p.name)+' 대표 이미지" loading="lazy"></span>'+
       '<span class="random-product-body"><span class="random-product-title">'+esc(p.name)+'</span>'+
       '<span class="random-product-sub">최대한 중복 없이 · '+esc(parts)+'</span>'+
-      '<span class="random-product-price">'+won(p.price)+'<small>'+(soldout?"현재 품절":"자세히 보기 →")+'</small></span></span></button>';
+      '<span class="random-product-price">'+randomPriceHtml(p,false)+'<small>'+(soldout?"현재 품절":"자세히 보기 →")+'</small></span></span></button>';
   }).join("");
 }
 function openRandomBox(id){
@@ -2142,8 +2167,8 @@ function openRandomBox(id){
   const modal=document.querySelector("#randomBoxModal");
   document.querySelector("#randomDetailImage").src=p.image_url||"assets/random-slimbox.svg";
   document.querySelector("#randomDetailName").textContent=p.name;
-  document.querySelector("#randomDetailPrice").textContent=won(p.price);
-  document.querySelector("#randomDetailSlots").innerHTML=randomSlots.map(([k,label])=>
+  document.querySelector("#randomDetailPrice").innerHTML=randomPriceHtml(p,true);
+  document.querySelector("#randomDetailSlots").innerHTML=randomSlots.filter(([k])=>Number(p.slots?.[k]||0)>0).map(([k,label])=>
     '<span>'+esc(label)+' <b>'+Number(p.slots?.[k]||0)+'장</b></span>'
   ).join("");
   document.querySelector("#randomDetailDesc").textContent=p.description||"";
@@ -2175,7 +2200,7 @@ document.addEventListener("keydown",e=>{
 });
 document.querySelector("#randomDetailInquiry")?.addEventListener("click",async()=>{
   const p=selectedRandomBox;if(!p||Number(p.stock_qty||0)<1)return;
-  const slots=randomSlots.map(([k,label])=>label+" "+Number(p.slots?.[k]||0)+"장").join(", ");
+  const slots=randomSlots.filter(([k])=>Number(p.slots?.[k]||0)>0).map(([k,label])=>label+" "+Number(p.slots?.[k]||0)+"장").join(", ");
   const message="안녕하세요. "+p.name+" 1세트 구매 문의드립니다.\n구성: "+slots+"\n가격: "+won(p.price)+" (배송비 별도)\n최대한 중복 없이 구성 부탁드립니다.";
   // Open synchronously in the click handler so browser popup blockers don't prevent it.
   const kakaoOk=Boolean(C.KAKAO_OPENCHAT_URL&&!C.KAKAO_OPENCHAT_URL.includes("YOUR_LINK"));
