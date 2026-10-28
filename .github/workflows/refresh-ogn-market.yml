@@ -1,0 +1,48 @@
+name: Refresh Origins TCGplayer snapshot
+on:
+  push:
+    paths:
+      - .github/workflows/refresh-ogn-market.yml
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch Origins market prices
+        run: |
+          python3 - <<'PY'
+          import json,urllib.request,datetime,pathlib
+          def get(url):
+            req=urllib.request.Request(url,headers={'User-Agent':'RiftboundOriginsInventory/1.0 (GitHub workflow)','Accept':'application/json'})
+            with urllib.request.urlopen(req,timeout=60) as response:
+              return json.load(response)
+          catalog=get('https://raw.githubusercontent.com/novaoc/rarebox-data/main/catalog/riftbound/sets/OGN.json')
+          prices=get('https://tcgcsv.com/tcgplayer/89/24344/prices')
+          mapped={str(c['tcgplayerId']):c for c in catalog if c.get('tcgplayerId')}
+          entries={}
+          for rec in prices.get('results',[]):
+            c=mapped.get(str(rec.get('productId')))
+            if not c or rec.get('marketPrice') is None:continue
+            finish=str(rec.get('subTypeName','')).upper()
+            if finish not in ('NORMAL','FOIL'):continue
+            cid=str(c['id']).lower()
+            if not cid.startswith('ogn-') or not cid.endswith('-298'):continue
+            key=cid[4:-4]
+            if key.endswith('*'): key=key[:-1]+'SIG'
+            code='OGN-'+key.upper()+'-'+finish
+            entries[code]={'usd':round(float(rec['marketPrice']),2),'productId':int(rec['productId'])}
+          if len(entries)<300:raise RuntimeError('Incomplete data: '+str(len(entries)))
+          output={'fetchedAt':datetime.datetime.now(datetime.timezone.utc).isoformat(),'source':'TCGplayer marketPrice via TCGCSV','entries':entries}
+          pathlib.Path('market-data').mkdir(exist_ok=True)
+          pathlib.Path('market-data/ogn-tcgplayer-latest.json').write_text(json.dumps(output,ensure_ascii=False,separators=(',',':'))+'\n',encoding='utf-8')
+          print('Fetched',len(entries),'printings')
+          PY
+      - name: Commit snapshot
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add market-data/ogn-tcgplayer-latest.json
+          git diff --cached --quiet || (git commit -m 'data: refresh Origins market price snapshot' && git push)
