@@ -1160,7 +1160,7 @@ onclick="const p=document.getElementById('managePanel');const opening=!p.classLi
         </div>
 
         <div class="controls-section grid3">
-          <select id="rarity"><option value="">전체 레어도</option></select>
+          <select id="rarity"><option value="">전체 레어도</option><option value="cu">커먼 + 언커먼 (C/U)</option></select>
           <select id="own">
             <option value="">전체</option>
             <option value="owned">보유중</option>
@@ -1186,12 +1186,19 @@ onclick="const p=document.getElementById('managePanel');const opening=!p.classLi
             <option value="number">번호순</option>
             <option value="priceDesc">가격 높은순</option>
             <option value="priceAsc">가격 낮은순</option>
+            <option value="sellQtyAsc">판매가능 적은순 (0장부터)</option>
+            <option value="sellQtyDesc">판매가능 많은순</option>
             <option value="name">이름순</option>
           </select>
           <div style="display:flex;align-items:center;gap:4px">
             <span class="sub">환율</span>
             <input id="fx" type="number" min="500" step="1" style="width:100%" value="1328" title="2026-10-28 기준 USD/KRW 약 1,328원 · 북미 시세 환산용">
           </div>
+        </div>
+
+        <div class="controls-section">
+          <button id="cuStockCheckBtn" type="button" style="width:100%;min-height:36px;font-weight:900;background:#f0f9ff;border-color:#bae6fd">📦 C/U 일반카드 부족 재고 점검 (NORMAL · 적은순 · 목록)</button>
+          <div class="sub" style="margin-top:4px">판매가능 0장부터 확인 · 바인더 1장 제외 · 재고많음(-)은 맨 뒤 · C/U 포일은 피니시 필터에서 변경</div>
         </div>
 
         <div class="controls-section sub" style="line-height:1.5">
@@ -1784,7 +1791,7 @@ $("#saveSettings").onclick=async()=>{
 
 function buildRarity(){
   const s=$("#rarity"),cur=s.value;
-  s.innerHTML='<option value="">전체 레어도</option>';
+  s.innerHTML='<option value="">전체 레어도</option><option value="cu">커먼 + 언커먼 (C/U)</option>';
   [...new Set(cards.map(c=>c.rarity).filter(Boolean))].sort().forEach(x=>s.insertAdjacentHTML("beforeend",`<option>${esc(x)}</option>`));
   s.value=cur;
 }
@@ -1810,12 +1817,31 @@ $("#promoQuickBtn").onclick=()=>{
   $("#promoQuickBtn").classList.toggle("promo-quick-active",!active);
   render();
 };
+$("#cuStockCheckBtn").onclick=()=>{
+  // Clear conflicting filters so 0-sale-stock C/U are visible, too.
+  $("#q").value="";
+  $("#rarity").value="cu";
+  $("#own").value="";
+  $("#variant").value="Standard";
+  $("#finish").value="NORMAL";
+  $("#sort").value="sellQtyAsc";
+  $("#promoQuickBtn").classList.remove("promo-quick-active");
+  viewMode="list";
+  localStorage.setItem("riftbound_admin_view",viewMode);
+  applyViewMode();
+  // The mobile manage panel takes up the viewport when expanded.
+  const toggle=$("#manageToggle");
+  if($("#managePanel").classList.contains("open"))toggle.click();
+  window.scrollTo({top:0,behavior:"auto"});
+};
+
 
 function filtered(){
   const q=$("#q").value.trim().toLowerCase(),r=$("#rarity").value,o=$("#own").value,v=$("#variant").value,f=$("#finish").value;
   let a=cards.filter(c=>{
     if(q&&!(`${c.name_ko} ${c.card_no} ${c.code} ${c.variant||""} ${c.finish||""}`.toLowerCase().includes(q)))return false;
-    if(r&&c.rarity!==r)return false;
+    if(r==="cu"&&!isCU(c))return false;
+    if(r&&r!=="cu"&&c.rarity!==r)return false;
     if(o==="owned"&&!isMany(c)&&Number(c.total_qty||0)<1)return false;
     if(o==="missing"&&(isMany(c)||Number(c.total_qty||0)>0))return false;
     if(o==="sellable"&&!isSellable(c))return false;
@@ -1827,6 +1853,16 @@ function filtered(){
   const s=$("#sort").value;
   if(s==="priceDesc")a.sort((x,y)=>Number(y.sell_price)-Number(x.sell_price));
   else if(s==="priceAsc")a.sort((x,y)=>Number(x.sell_price)-Number(y.sell_price));
+  else if(s==="sellQtyAsc"||s==="sellQtyDesc"){
+    const direction=s==="sellQtyAsc"?1:-1;
+    a.sort((x,y)=>{
+      // Unknown "many" quantities must never be mistaken for 0-stock items.
+      if(isMany(x)!==isMany(y))return isMany(x)?1:-1;
+      const gap=direction*(saleQty(x)-saleQty(y));
+      if(gap)return gap;
+      return Number(x.sort_no||9999)-Number(y.sort_no||9999);
+    });
+  }
   else if(s==="name")a.sort((x,y)=>String(x.name_ko).localeCompare(String(y.name_ko),"ko"));
   else a.sort((x,y)=>{
     const xp=isPromo(x)?0:1, yp=isPromo(y)?0:1;
