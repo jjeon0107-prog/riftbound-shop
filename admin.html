@@ -1190,7 +1190,7 @@ onclick="const p=document.getElementById('managePanel');const opening=!p.classLi
           </select>
           <div style="display:flex;align-items:center;gap:4px">
             <span class="sub">환율</span>
-            <input id="fx" type="number" min="500" step="10" style="width:100%" value="1400">
+            <input id="fx" type="number" min="500" step="1" style="width:100%" value="1328" title="2026-10-28 기준 USD/KRW 약 1,328원 · 북미 시세 환산용">
           </div>
         </div>
 
@@ -1520,7 +1520,16 @@ const S=window.supabase.createClient(C.SUPABASE_URL,C.SUPABASE_ANON_KEY);
 
 let cards=[],original={},dirty=new Set();
 let viewMode=localStorage.getItem("riftbound_admin_view")||"album";
-let fx=Number(localStorage.getItem("riftbound_admin_fx")||1400);
+// October 28, 2026 USD/KRW reference. Migrate previous 1400 default once;
+ // later manual FX changes on the same date remain saved.
+const NA_FX_DATE="2026-10-28";
+const NA_FX_DEFAULT=1328;
+const NA_FX_STORED=localStorage.getItem("riftbound_admin_fx_date");
+let fx=Number(NA_FX_STORED===NA_FX_DATE?(localStorage.getItem("riftbound_admin_fx")||NA_FX_DEFAULT):NA_FX_DEFAULT);
+if(NA_FX_STORED!==NA_FX_DATE){
+  localStorage.setItem("riftbound_admin_fx",String(NA_FX_DEFAULT));
+  localStorage.setItem("riftbound_admin_fx_date",NA_FX_DATE);
+}
 let autosaveTimer=null;
 
 const BASE_FX=1400;
@@ -2953,7 +2962,7 @@ if(pendingOrdersEl) pendingOrdersEl.addEventListener("click",async e=>{
 
 $("#albumViewBtn").onclick=()=>{viewMode="album";localStorage.setItem("riftbound_admin_view",viewMode);applyViewMode()};
 $("#listViewBtn").onclick=()=>{viewMode="list";localStorage.setItem("riftbound_admin_view",viewMode);applyViewMode()};
-$("#fx").onchange=()=>{fx=Math.max(500,Number($("#fx").value||1400));localStorage.setItem("riftbound_admin_fx",String(fx));render()};
+$("#fx").onchange=()=>{fx=Math.max(500,Number($("#fx").value||NA_FX_DEFAULT));localStorage.setItem("riftbound_admin_fx",String(fx));render()};
 $("#saveBtn").onclick=async()=>{if(!dirty.size)return alert("변경된 항목이 없어.");const ok=await saveCodes([...dirty],false);if(ok)alert("저장 완료")};
 
 const ce=v=>`"${String(v??"").replace(/"/g,'""')}"`;
