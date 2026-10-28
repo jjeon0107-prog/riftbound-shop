@@ -1828,7 +1828,7 @@ $("#cuStockCheckBtn").onclick=()=>{
   $("#promoQuickBtn").classList.remove("promo-quick-active");
   viewMode="list";
   localStorage.setItem("riftbound_admin_view",viewMode);
-  applyViewMode();
+  render();
   // The mobile manage panel takes up the viewport when expanded.
   const toggle=$("#manageToggle");
   if($("#managePanel").classList.contains("open"))toggle.click();
