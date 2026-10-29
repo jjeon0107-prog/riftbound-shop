@@ -2077,7 +2077,9 @@ function fmtDt(v){
 }
 function orderItemsText(items){
   if(!Array.isArray(items))return "";
-  return items.map(x=>
+  const namedBundle=items.find(x=>x.bundle_slug&&x.bundle_name);
+  const preface=namedBundle?`🎁 세트 상품: ${namedBundle.bundle_name} · 12종 각 1장\n`:"";
+  return preface+items.map(x=>
     `${x.card_no||x.code} ${x.name_ko||""} ${x.finish||""} ×${x.qty}${x.stock_many?" · 재고많음":""}`
   ).join("\n");
 }
