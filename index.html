@@ -853,6 +853,29 @@ body.random-modal-open{overflow:hidden}
   #copyBtn,#kakaoBtn{display:none}
   #cartViewBtn{grid-column:auto}
 }
+
+/* Origins 12-legend collection */
+.legend-offer{margin:12px 0 16px;padding:14px;border:1px solid #d4b77a;border-radius:14px;background:linear-gradient(140deg,#fffaf0,#f7f9ff);box-shadow:0 2px 11px rgba(29,36,59,.07)}
+.legend-offer-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:9px}
+.legend-offer-kicker{font-size:10px;color:#906423;font-weight:900;letter-spacing:.05em;margin-bottom:4px}
+.legend-offer-title{font-size:19px;font-weight:950;color:#18213b;line-height:1.35}
+.legend-offer-description{margin:7px 0 12px;font-size:12px;color:#475569;line-height:1.65;font-weight:600}
+.legend-offer-stock{background:#fef3c7;color:#77470d;padding:6px 9px;border-radius:99px;font-size:11px;font-weight:900;white-space:nowrap}
+.legend-offer-stock.soldout{background:#e5e7eb;color:#6b7280}
+.legend-offer-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:7px;margin:9px 0 11px}
+.legend-mini{min-width:0;border:1px solid #e2e8f0;border-radius:8px;padding:4px;background:#fff;text-align:center}
+.legend-mini .img{display:block;width:100%;aspect-ratio:5/7;object-fit:cover;border-radius:4px;background:#eee}
+.legend-mini-name{margin-top:4px;font-size:9px;line-height:1.3;color:#334155;font-weight:800;min-height:24px;word-break:keep-all}
+.legend-offer-bottom{display:flex;align-items:center;justify-content:space-between;gap:14px}
+.legend-offer-prices{display:flex;align-items:baseline;flex-wrap:wrap;column-gap:7px;row-gap:2px}
+.legend-offer-prices del{font-size:13px;color:#94a3b8}
+.legend-offer-prices strong{font-size:26px;color:#111827;font-weight:950}
+.legend-offer-discount{font-size:11px;color:#b45309;font-weight:900}
+.legend-offer-action{border:0;background:#172b51;color:#fff;border-radius:10px;padding:12px 16px;font-size:13px;font-weight:900;cursor:pointer}
+.legend-offer-action:disabled{background:#9ca3af;cursor:not-allowed}
+.legend-offer-note{margin-top:10px;font-size:10px;line-height:1.6;color:#64748b}
+@media(max-width:600px){.legend-offer{padding:11px}.legend-offer-title{font-size:16px}.legend-offer-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}.legend-mini-name{font-size:9px}.legend-offer-bottom{align-items:stretch;flex-direction:column;gap:8px}.legend-offer-action{width:100%;min-height:42px}}
+
 </style>
 
 </head>
@@ -918,6 +941,8 @@ body.random-modal-open{overflow:hidden}
     <div id="featuredCards" class="featured-grid"></div>
   </section>
 
+
+  <section id="legendOffer" class="legend-offer" hidden aria-label="오리진 전설 풀세트"><div id="legendOfferContent"></div></section>
 
   <section id="randomShop" class="random-shop" hidden aria-label="랜덤 카드 묶음">
     <div class="random-shop-heading"><b>랜덤 카드 묶음</b><span>이미지 클릭 · 구성 및 구매 안내</span></div>
@@ -1059,6 +1084,8 @@ async function restRpc(name,args){
 }
 
 let cards = [];
+let legendOffer=null;
+let legendOrderBusy=false;
 let soldCounts = {};
 let deckBundles = [];
 let selectedDeckId = null;
@@ -1231,6 +1258,7 @@ function applyLanguage(){
 
   render();
   renderDeckShop();
+  renderLegendOffer();
   updateLastUpdated();
   updatePublicStockSummary();
 }
@@ -1342,6 +1370,81 @@ function nextCardImage(img) {
   }
 }
 
+
+const LEGEND_BUNDLE_SLUG="origins-legends-12";
+async function loadLegendOffer(){
+  try{
+    const data=await restRpc("public_fixed_bundle_offer",{p_slug:LEGEND_BUNDLE_SLUG});
+    legendOffer=data&&Array.isArray(data.items)?data:null;
+    renderLegendOffer();
+  }catch(err){
+    console.warn("전설 세트 조회 실패:",err);
+    legendOffer=null;renderLegendOffer();
+  }
+}
+function renderLegendOffer(){
+  const section=document.querySelector("#legendOffer"),content=document.querySelector("#legendOfferContent");
+  if(!section||!content)return;
+  if(!legendOffer||!Array.isArray(legendOffer.items)||legendOffer.items.length!==12){section.hidden=true;return}
+  const offer=legendOffer,en=lang==="en";
+  const available=Math.max(0,Number(offer.available||0));
+  const original=Math.max(0,Number(offer.reference_price||0)),price=Math.max(0,Number(offer.price||0));
+  const discount=original>price?Math.round((1-price/original)*100):0;
+  section.hidden=false;
+  content.innerHTML=`
+    <div class="legend-offer-top">
+      <div><div class="legend-offer-kicker">${en?"ORIGINS · COMPLETE LEGEND COLLECTION":"ORIGINS · 전설 12종 컬렉션"}</div>
+      <div class="legend-offer-title">${esc(en?offer.name_en:offer.name_ko)}</div></div>
+      <div class="legend-offer-stock ${available===0?"soldout":""}">${available?en?available+" sets left":available+"세트 판매 가능":en?"Sold out":"품절"}</div>
+    </div>
+    <div class="legend-offer-description">${esc(en?offer.description_en:offer.description_ko)}</div>
+    <div class="legend-offer-grid">${offer.items.map(x=>{
+      const card=cards.find(c=>c.code===x.code)||x;
+      const name=en?(englishName(card)||x.name_ko):x.name_ko;
+      return `<div class="legend-mini">${imageHtml(card)}<div class="legend-mini-name">${esc(name)}</div></div>`;
+    }).join("")}</div>
+    <div class="legend-offer-bottom">
+      <div class="legend-offer-prices">
+        ${original>price?`<del>${won(original)}</del>`:""}
+        <strong>${won(price)}</strong>
+        ${discount?`<span class="legend-offer-discount">${discount}% OFF</span>`:""}
+      </div>
+      <button id="legendBuyBtn" class="legend-offer-action" type="button" ${!available||legendOrderBusy?"disabled":""}>
+        ${legendOrderBusy?(en?"Submitting...":"주문 등록 중…"):!available?(en?"Sold out":"현재 품절"):(en?"Order the 12-card set":"전설 12종 세트 구매 문의")}
+      </button>
+    </div>
+    <div class="legend-offer-note">${en?"12 Korean Origins FOIL Rare legends · Launch limit 3 sets · Shipping extra · Inventory shared with single cards":"한글판 오리진 레어 전설 12종 각 1장 · 최초 3세트 한정 · 배송비 별도 · 단품 재고와 연동"}</div>`;
+}
+document.querySelector("#legendOffer")?.addEventListener("click",async e=>{
+  if(!e.target.closest("#legendBuyBtn")||!legendOffer||legendOrderBusy||Number(legendOffer.available)<=0)return;
+  if(!C.KAKAO_OPENCHAT_URL||C.KAKAO_OPENCHAT_URL.includes("YOUR_LINK")){alert(T("kakaoMissing"));return;}
+  legendOrderBusy=true;renderLegendOffer();
+  const popup=window.open("about:blank","_blank");
+  try{
+    const orderId=Number(await restRpc("submit_fixed_bundle_order",{p_slug:LEGEND_BUNDLE_SLUG}));
+    if(!Number.isInteger(orderId)||orderId<=0)throw new Error("주문번호 생성 실패");
+    const en=lang==="en";
+    const lines=[
+      en?"[Riftbound Origins Legend Collection]":"[리프트바운드 오리진 전설 12종 풀세트 구매 문의]",
+      (en?"Order #":"문의번호 #")+String(orderId).padStart(6,"0"),
+      (en?"12 Korean FOIL Rare Legends · 1 set":"한글판 레어 전설 FOIL 12종 각 1장 / 1세트"),
+      (en?"Bundle price: ":"세트가: ")+won(legendOffer.price)+(en?" (shipping extra)":" (배송비 별도)"),
+      "",...legendOffer.items.map(x=>x.card_no+" "+x.name_ko+" ×1"),"",
+      en?"Please confirm availability and shipping.":"세트 구매 및 배송 방법 확인 부탁드립니다."
+    ];
+    const message=lines.join("\n");
+    try{await navigator.clipboard.writeText(message)}catch{window.prompt(en?"Copy purchase message":"구매 문의 내용을 복사해 주세요.",message)}
+    alert((en?"Inquiry #":"문의번호 #")+String(orderId).padStart(6,"0")+(en?" registered. Paste the message into KakaoTalk.":" 등록 완료! 카카오톡에 복사한 내용을 붙여넣어 보내주세요."));
+    if(popup)popup.location.href=C.KAKAO_OPENCHAT_URL;
+    else window.location.href=C.KAKAO_OPENCHAT_URL;
+    await loadLegendOffer();
+  }catch(err){
+    if(popup)popup.close();
+    alert((lang==="en"?"Order failed: ":"세트 구매 문의 실패: ")+(err?.message||String(err)));
+    await loadLegendOffer();
+  }finally{legendOrderBusy=false;renderLegendOffer();}
+});
+
 async function load() {
   cardsEl.innerHTML=`<div class="empty">${T("loading")}</div>`;
 
@@ -1351,6 +1454,7 @@ async function load() {
     );
 
     cards=Array.isArray(data)?data:[];
+    void loadLegendOffer();
 
     if(!cards.length){
       throw new Error("카드 데이터가 0건입니다. public_cards 권한/뷰를 확인해 주세요.");
