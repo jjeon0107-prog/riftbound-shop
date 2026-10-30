@@ -1,0 +1,23 @@
+.market-brief{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px;align-items:center;line-height:1.4}
+.market-pill{font-size:9px;font-weight:700;color:#45546c;background:#eff3f8;border-radius:5px;padding:3px 5px;white-space:nowrap}
+.market-pill strong{color:#12233e;font-size:10px}
+.market-pill.partial{border:1px dashed #ae8550;background:#fffaf0}
+.market-pill.current{background:#e5f0ff;color:#174a90}
+.market-price-warning{display:block;font-size:10px;font-weight:900;color:#b45309;margin-top:4px}
+.market-detail-btn{font-size:10px!important;min-height:25px!important;padding:3px 7px!important;border:1px solid #bfcee1!important;border-radius:6px!important;background:#f8fafc!important;color:#1e3a5f!important;font-weight:900!important;cursor:pointer}
+.market-current-us{font-size:10px;font-weight:850;color:#263d68}
+.market-list-markers{max-width:170px;min-width:120px}
+.market-list-markers .market-brief{gap:2px}
+.market-list-markers .market-pill{font-size:9px;padding:1px 3px}
+.market-info-overlay{position:fixed;inset:0;display:none;justify-content:center;align-items:center;background:rgba(10,18,32,.72);z-index:2000;padding:12px}
+.market-info-overlay.show{display:flex}
+.market-info-card{width:min(690px,100%);max-height:91dvh;overflow:auto;background:#fff;border-radius:12px;padding:16px;color:#17213b}
+.market-info-title{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.market-info-title b{font-size:17px}
+.market-info-title button{background:#eef2f7;color:#334155;border:0;border-radius:7px;padding:7px 12px;font-weight:900}
+.market-info-table{border-collapse:collapse;width:100%;font-size:12px;margin:12px 0}
+.market-info-table th,.market-info-table td{padding:8px 5px;border-bottom:1px solid #e2e8f0;text-align:right}
+.market-info-table th:first-child,.market-info-table td:first-child{text-align:left}
+.market-info-table th{font-size:10px;color:#64748b}
+.market-info-foot{line-height:1.65;font-size:11px;color:#475569}
+@media(max-width:600px){.market-info-card{max-height:100dvh;width:100%;height:100dvh;border-radius:0;padding:12px;box-sizing:border-box}.market-info-overlay{padding:0}.market-info-table{font-size:11px}.market-info-table th,.market-info-table td{padding:8px 3px}}
