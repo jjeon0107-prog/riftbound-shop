@@ -50,14 +50,14 @@
       const partial = era === "VEN";
       const invalid = invalidPeak(peaks, i);
       const label = partial ? era + "*" : era;
-      const display = !row ? "—" : invalid ? "확인 필요" : formatUSD(row[0]);
-      return `<span class="market-pill${partial ? " partial" : ""}" title="${html(ERA_KO[i])}${partial ? " · 2026-09-15까지 부분 집계" : ""}">${label} <strong>${display}</strong></span>`;
+      const display = !row ? "—" : invalid ? "확인 필요" : formatKRW(row[0]);
+      return `<span class="market-pill${partial ? " partial" : ""}" title="${html(ERA_KO[i])}${partial ? " · 2026-09-15까지 부분 집계" : ""}${row && !invalid ? " · 원본 " + formatUSD(row[0]) : ""}">${label} <strong>${display}</strong></span>`;
     }).join("") : "";
     const current = data.current === null ? "" :
-      `<div class="market-current-us">TCGplayer 현재 ${formatUSD(data.current)} · ${formatKRW(data.current)}</div>`;
+      `<div class="market-current-us" title="TCGplayer 원본 ${formatUSD(data.current)}">현재 (${html(String(latest?.fetchedAt || "").slice(0, 10))}) <strong>${formatKRW(data.current)}</strong></div>`;
     const warning = warningFor(card, data) ?
       '<span class="market-price-warning">⚠ 국내 판매가와 북미 시세 차이 큼 · 확인 권장</span>' : "";
-    return `<div class="market-history-block">${current}${chips ? `<div class="market-brief">${chips}</div>` : ""}${warning}<button type="button" class="market-detail-btn" data-market-code="${html(data.key)}">시기별 북미가 상세</button></div>`;
+    return `<div class="market-history-block">${chips ? `<div class="market-brief">${chips}</div>` : ""}${current}${warning}<button type="button" class="market-detail-btn" data-market-code="${html(data.key)}">시기별 북미가 상세</button></div>`;
   }
 
   function decorate() {
@@ -121,24 +121,30 @@
     const title = c ? `${c.name_ko || ""} · ${c.card_no || data.key}` : data.key;
     el.querySelector("#marketHistoryTitle").textContent = title;
     el.querySelector("#marketHistorySubtitle").textContent = `${data.key} · ${c?.finish || ""} · 1 USD = ${readFX().toLocaleString("ko-KR")}원`;
-    let body = data.current === null ? "" :
-      `<p><b>북미 현재가: ${formatUSD(data.current)} (${formatKRW(data.current)})</b><br>
-      <span class="market-info-foot">TCGplayer Market · ${html(String(latest?.fetchedAt || "").slice(0, 10))} 수집</span></p>`;
+    let body = "";
     if (data.peaks) {
       const rows = ERA_NAMES.map((era, i) => {
         const row = data.peaks[i];
         const partial = era === "VEN" ? "*" : "";
-        const name = `${ERA_KO[i]} (${era}${partial})`;
+        const range = history?.eras?.[i] || [];
+        const endDate = era === "VEN" ? history?.sourceLastDate || range[2] : range[2];
+        const when = range[1] ? `${range[1]} ~ ${endDate}` : "";
+        const name = `${ERA_KO[i]} (${era}${partial})<br><span class="sub">${html(when)}</span>`;
         if (!row) return `<tr><td>${name}</td><td colspan="4">기록 없음</td></tr>`;
         if (invalidPeak(data.peaks, i)) return `<tr><td>${name}</td><td colspan="4">출처의 비정상적인 가격 기록으로 제외</td></tr>`;
-        return `<tr><td>${name}</td><td><b>${formatUSD(row[0])}</b></td><td>${formatKRW(row[0])}</td><td>${dateOf(row[1])}</td><td>${formatUSD(row[2])}<br><span class="sub">${dateOf(row[3])} · ${row[4]}회 기록</span></td></tr>`;
+        return `<tr><td>${name}</td><td title="원본 ${formatUSD(row[0])}"><b>${formatKRW(row[0])}</b></td><td>${dateOf(row[1])}</td><td title="원본 ${formatUSD(row[2])}">${formatKRW(row[2])}<br><span class="sub">${row[4]}회 기록</span></td><td>${dateOf(row[3])}</td></tr>`;
       }).join("");
-      body += `<table class="market-info-table"><thead><tr><th>시기</th><th>기간 최고</th><th>최고가 원환산</th><th>최고가 날짜</th><th>기간 마지막 기록</th></tr></thead><tbody>${rows}</tbody></table>`;
+      body += `<table class="market-info-table"><thead><tr><th>시기 · 관측 기간</th><th>기간 최고 (원)</th><th>최고가 날짜</th><th>기간 마지막 (원)</th><th>마지막 날짜</th></tr></thead><tbody>${rows}</tbody></table>`;
+    }
+    if (data.current !== null) {
+      const at = String(latest?.fetchedAt || "").slice(0, 10);
+      body += `<p class="market-current-us" title="TCGplayer 원본 ${formatUSD(data.current)}"><b>현재가 · ${html(at || "기준일 미상")} → ${formatKRW(data.current)}</b><br>
+        <span class="market-info-foot">TCGplayer Market · 시기별 기록 다음의 최신 참고값</span></p>`;
     }
     body += `<div class="market-info-foot">
       <b>참고:</b> 과거 가격은 rarebox-price-history의 TCGplayer Market 관측치 중 <b>확인된 최고값</b>입니다. 실거래·판매 보장 가격이 아닙니다.<br>
       <b>VEN*</b>은 2026-07-31~${html(history?.sourceLastDate || "2026-09-15")}까지만 집계되었습니다. 이후 가격은 최고가 계산에 포함되지 않습니다.<br>
-      원화는 관리자 상단의 환율 입력값으로 환산합니다. 국내 판매가 및 재고는 변경되지 않습니다.
+      화면의 가격은 관리자 상단 환율 × 달러 원가를 원화로 환산한 참고값입니다. 원본 달러가는 가격 위에 마우스를 올리면 확인할 수 있습니다. 국내 판매가 및 재고는 변경되지 않습니다.
     </div>`;
     el.querySelector("#marketHistoryContent").innerHTML = body;
     el.classList.add("show");
@@ -174,7 +180,7 @@
     if (results[0].status === "fulfilled") history = results[0].value;
     if (results[1].status === "fulfilled") latest = results[1].value;
     if (history || latest) {
-      info.textContent = `🇺🇸 북미 참고가: TCGplayer 현재 ${String(latest?.fetchedAt || "").slice(0, 10) || "미수집"} / 확장팩 시기별 최고가 ${history?.sourceLastDate || "미수집"}까지 (VEN 부분 집계). 카드별 ‘상세’에서 날짜를 확인하세요.`;
+      info.textContent = `🇺🇸 북미 참고가(원화): OGN → SFD → UNL → VEN* → 현재가 순. TCGplayer 현재 ${String(latest?.fetchedAt || "").slice(0, 10) || "미수집"} / 과거 기록 ${history?.sourceLastDate || "미수집"}까지 (VEN 부분 집계).`;
       scheduleDecorate();
     } else {
       info.textContent = "⚠ 북미 참고가를 불러오지 못했습니다. 새로고침 후 다시 확인해 주세요.";
