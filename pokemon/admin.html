@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f6f8fc">
+<title>포켓몬 카드 관리자 · 재고와 판매 관리</title>
+<link rel="stylesheet" href="common.css?v=20261106-1">
+</head>
+<body data-mode="admin">
+<header class="header"><div class="head-inner">
+  <div class="identity"><span class="pokeball" aria-hidden="true"></span><span>포켓몬 카드 관리<small>보유 도감 · 수량 · 가격 · 판매</small></span></div>
+  <nav class="head-links"><a href="../admin.html">리프트바운드 관리</a><a href="index.html">포켓몬 판매</a></nav>
+</div></header>
+<main class="container">
+  <section class="hero"><div><span class="eyebrow">PRIVATE INVENTORY</span><h1>포켓몬 전체 도감 관리</h1><p>사진을 보고 수량을 조절하세요. 판매는 수량 확인·가격 설정 후 개별 공개됩니다.</p></div><div class="hero-stats" id="summary">관리자 확인 중…</div></section>
+  <div id="loginPanel" class="login-panel" hidden><h2>관리자 로그인</h2><p>리프트바운드 관리자와 동일한 계정입니다.</p><div class="login-fields"><input id="loginEmail" type="email" autocomplete="username" placeholder="관리자 이메일"><input id="loginPassword" type="password" autocomplete="current-password" placeholder="비밀번호"><button id="loginBtn" type="button" class="primary">로그인</button></div><div id="loginMessage" class="error"></div></div>
+  <section id="adminMain" hidden>
+    <div class="admin-actions"><span id="saveStatus">기존 기록을 불러오는 중…</span><button id="refreshBtn" type="button">↻ 재고 갱신</button></div>
+    <div class="notice">기존 체크리스트의 보유 상태와 수량을 <b>참고용</b>으로 가져왔습니다. 판매 전 해당 카드의 <b>수량 확인</b>을 체크해 주세요. 보관 1장은 판매가능 수량에서 제외됩니다.</div>
+    <section class="toolbar" aria-label="관리자 카드 필터">
+      <label>세트<select id="setFilter"><option value="">전체 세트</option></select></label>
+      <label>등급<select id="rarityFilter"><option value="">전체 등급</option></select></label>
+      <label class="search-field">번호·이름 검색<input id="searchInput" type="search" placeholder="예: M5-001 또는 카드명"></label>
+      <label>보기<select id="adminFilter"><option value="">전체 카드</option><option value="owned">보유 카드만</option><option value="missing">미보유만</option><option value="unverified">미확인만</option><option value="selling">판매중만</option></select></label>
+    </section>
+    <div class="list-header"><div><h2>카드 재고 · 가격</h2><span id="listHint">수량 변경은 자동 저장됩니다.</span></div><span class="result-count" id="resultCount"></span></div>
+    <div id="status" class="status" hidden></div><section id="cardGrid" class="card-grid admin-grid" aria-label="포켓몬 카드별 재고 입력"></section>
+  </section>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../config.js?v=20261003-2"></script>
+<script src="app.js?v=20261106-1"></script>
+</body>
+</html>
