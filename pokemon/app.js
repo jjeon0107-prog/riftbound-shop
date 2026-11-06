@@ -70,7 +70,7 @@
   function adminHtml(c,i){
     var r=stock(c),n=Number(r.total_qty)||0,verified=!!r.stock_verified;
     var opt=function(value){return '<option value="'+value+'" '+(r.condition===value?"selected":"")+">"+value+"</option>"};
-    return '<article class="card admin-card '+(listed(r)?"is-selling ":"")+(verified?"":"unverified")+'" data-key="'+esc(c.key)+'">'+photo(c,r,i)+
+    return '<article class="card admin-card '+(listed(r)?"is-selling ":"")+(verified?"":"unverified ")+(n===0?"missing":"")+'" data-key="'+esc(c.key)+'">'+photo(c,r,i)+
       '<div class="card-body"><b class="card-name">'+esc(c.name)+'</b><span class="card-meta">'+esc(c.setName)+" · "+esc(c.rarity)+(r.legacy_import?" · 기존자료":"")+'</span>'+
       '<div class="stock-row"><button type="button" data-action="minus" aria-label="보유 1장 감소">−</button><span>보유 <strong class="stock-number">'+n+'</strong>장</span><button type="button" data-action="plus" aria-label="보유 1장 증가">+</button></div>'+
       '<div class="state-row"><label><input type="checkbox" data-field="binder_qty" '+(r.binder_qty?"checked":"")+(n?"":" disabled")+'>보관 1장</label><span class="available">판매가능 '+free(r)+'장</span></div>'+
@@ -135,6 +135,7 @@
     item.querySelector('[data-field="stock_verified"]').checked=!!r.stock_verified;
     item.querySelector('[data-field="sell_enabled"]').checked=!!r.sell_enabled;
     item.classList.toggle("unverified",!r.stock_verified);
+    item.classList.toggle("missing",r.total_qty===0);
     item.classList.toggle("is-selling",listed(r));
     var tag=item.querySelector(".sale-tag");
     if(tag&&!listed(r))tag.remove();

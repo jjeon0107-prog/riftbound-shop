@@ -4,7 +4,7 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#f6f8fc">
 <title>포켓몬 카드 관리자 · 재고와 판매 관리</title>
-<link rel="stylesheet" href="common.css?v=20261106-1">
+<link rel="stylesheet" href="common.css?v=20261106-2">
 </head>
 <body data-mode="admin">
 <header class="header"><div class="head-inner">
@@ -12,7 +12,7 @@
   <nav class="head-links"><a href="../admin.html">리프트바운드 관리</a><a href="index.html">포켓몬 판매</a></nav>
 </div></header>
 <main class="container">
-  <section class="hero"><div><span class="eyebrow">PRIVATE INVENTORY</span><h1>포켓몬 전체 도감 관리</h1><p>사진을 보고 수량을 조절하세요. 판매는 수량 확인·가격 설정 후 개별 공개됩니다.</p></div><div class="hero-stats" id="summary">관리자 확인 중…</div></section>
+  <section class="hero"><div><span class="eyebrow">PRIVATE INVENTORY</span><h1>포켓몬 세트별 도감 관리</h1><p>사진을 보고 수량을 조절하세요. 판매는 수량 확인·가격 설정 후 개별 공개됩니다.</p></div><div class="hero-stats" id="summary">관리자 확인 중…</div></section>
   <div id="loginPanel" class="login-panel" hidden><h2>관리자 로그인</h2><p>리프트바운드 관리자와 동일한 계정입니다.</p><div class="login-fields"><input id="loginEmail" type="email" autocomplete="username" placeholder="관리자 이메일"><input id="loginPassword" type="password" autocomplete="current-password" placeholder="비밀번호"><button id="loginBtn" type="button" class="primary">로그인</button></div><div id="loginMessage" class="error"></div></div>
   <section id="adminMain" hidden>
     <div class="admin-actions"><span id="saveStatus">기존 기록을 불러오는 중…</span><button id="refreshBtn" type="button">↻ 재고 갱신</button></div>
@@ -29,6 +29,6 @@
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="../config.js?v=20261003-2"></script>
-<script src="app.js?v=20261106-1"></script>
+<script src="app.js?v=20261106-2"></script>
 </body>
 </html>
