@@ -4,6 +4,8 @@
   var $=function(id){return document.getElementById(id)};
   var esc=function(v){return String(v==null?"":v).replace(/[&<>"']/g,function(ch){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]})};
   var won=function(v){return "₩"+Math.max(0,Number(v)||0).toLocaleString("ko-KR")};
+  var categoryLabels={pokemon:"포켓몬",item:"아이템",tool:"포켓몬 도구",supporter:"서포트",stadium:"스타디움",energy:"에너지"};
+  var trainerTypes=new Set(["item","tool","supporter","stadium"]);
   var cfg=window.RIFTBOUND_CONFIG;
   var db=window.supabase&&cfg?window.supabase.createClient(cfg.SUPABASE_URL,cfg.SUPABASE_ANON_KEY):null;
   var sets=[],catalog=[],byKey=new Map(),inventory=new Map(),matched=[],displayed=0,cart=new Map(),timers=new Map(),chains=new Map();
@@ -19,7 +21,7 @@
   }
   function photo(c,r,i){
     var u=photoUrl(c,r);
-    return '<div class="photo"><img src="'+esc(u.src)+'" data-fallback="'+esc(u.fallback)+'" alt="'+esc(c.name)+' 카드" loading="'+(i<12?"eager":"lazy")+'" decoding="async"><span class="number">'+esc(c.key)+'</span>'+(listed(r)?'<span class="sale-tag">판매중</span>':"")+'</div>';
+    return '<div class="photo"><img src="'+esc(u.src)+'" data-fallback="'+esc(u.fallback)+'" alt="'+esc(c.name)+' 카드" loading="'+(i<12?"eager":"lazy")+'" decoding="async"></div>';
   }
   async function loadCatalog(){
     var res=await fetch("sets.json",{cache:"no-cache"});
@@ -46,11 +48,12 @@
     inventory=new Map(all.map(function(r){return [r.card_key,r]}));
   }
   function filter(){
-    var s=$("setFilter").value,rar=$("rarityFilter").value,q=$("searchInput").value.trim().toLowerCase(),mode=admin?$("adminFilter").value:"";
+    var s=$("setFilter").value,rar=$("rarityFilter").value,type=$("typeFilter").value,q=$("searchInput").value.trim().toLowerCase(),mode=admin?$("adminFilter").value:"";
     return catalog.filter(function(c){
       var r=stock(c);
       if(s&&c.setCode!==s)return false;
       if(rar&&c.rarity!==rar)return false;
+      if(type&&(type==="trainer"?!trainerTypes.has(c.cardType):c.cardType!==type))return false;
       if(q&&(c.key+" "+c.name+" "+c.setName).toLowerCase().indexOf(q)<0)return false;
       if(!admin&&$("saleOnly").checked&&!listed(r))return false;
       if(mode==="owned"&&!(r.total_qty>0))return false;
@@ -63,7 +66,7 @@
   function shopHtml(c,i){
     var r=stock(c),sell=listed(r);
     return '<article class="card '+(sell?"is-selling":"unavailable")+'" data-key="'+esc(c.key)+'">'+photo(c,r,i)+
-      '<div class="card-body"><b class="card-name">'+esc(c.name)+'</b><span class="card-meta">'+esc(c.setName)+" · "+esc(c.rarity)+" · "+esc(r.language||"KO")+'</span><div class="card-bottom">'+
+      '<div class="card-body">'+(sell?'<span class="available-badge">판매중</span>':'<span class="sold-badge">품절</span>')+'<b class="card-name">'+esc(c.name)+'</b><span class="card-meta">'+esc(c.setName)+" · "+esc(c.rarity)+" · "+esc(categoryLabels[c.cardType]||"종류 미분류")+'</span><div class="card-bottom">'+
       (sell?'<div class="price">'+won(r.price_krw)+'</div><div class="qty-note">판매가능 '+free(r)+"장 · "+esc(r.condition||"NM")+'</div>':'<div class="qty-note">현재 판매 등록되지 않은 카드</div>')+
       '<button class="primary" type="button" data-action="add" '+(sell?"":"disabled")+">"+(sell?"구매목록 담기":"판매 준비중")+'</button></div></div></article>';
   }
@@ -71,7 +74,7 @@
     var r=stock(c),n=Number(r.total_qty)||0,verified=!!r.stock_verified;
     var opt=function(value){return '<option value="'+value+'" '+(r.condition===value?"selected":"")+">"+value+"</option>"};
     return '<article class="card admin-card '+(listed(r)?"is-selling ":"")+(verified?"":"unverified ")+(n===0?"missing":"")+'" data-key="'+esc(c.key)+'">'+photo(c,r,i)+
-      '<div class="card-body"><b class="card-name">'+esc(c.name)+'</b><span class="card-meta">'+esc(c.setName)+" · "+esc(c.rarity)+(r.legacy_import?" · 기존자료":"")+'</span>'+
+      '<div class="card-body"><b class="card-name">'+esc(c.name)+'</b><span class="card-meta">'+esc(c.key)+" · "+esc(c.rarity)+" · "+esc(categoryLabels[c.cardType]||"종류 미분류")+(r.legacy_import?" · 기존자료":"")+'</span>'+
       '<div class="stock-row"><button type="button" data-action="minus" aria-label="보유 1장 감소">−</button><span>보유 <strong class="stock-number">'+n+'</strong>장</span><button type="button" data-action="plus" aria-label="보유 1장 증가">+</button></div>'+
       '<div class="state-row"><label><input type="checkbox" data-field="binder_qty" '+(r.binder_qty?"checked":"")+(n?"":" disabled")+'>보관 1장</label><span class="available">판매가능 '+free(r)+'장</span></div>'+
       '<label class="price-row">판매가 <input type="number" data-field="price_krw" min="0" step="100" inputmode="numeric" value="'+(Number(r.price_krw)||0)+'">원</label>'+
@@ -100,7 +103,7 @@
     append();
   }
   function wireCommon(){
-    ["setFilter","rarityFilter","searchInput",admin?"adminFilter":"saleOnly"].forEach(function(id){
+    ["setFilter","typeFilter","rarityFilter","searchInput",admin?"adminFilter":"saleOnly"].forEach(function(id){
       $(id).addEventListener(id==="searchInput"?"input":"change",refreshList);
     });
     window.addEventListener("scroll",function(){if(matched.length&&window.scrollY+window.innerHeight>document.documentElement.scrollHeight-700)append()},{passive:true});
@@ -137,9 +140,6 @@
     item.classList.toggle("unverified",!r.stock_verified);
     item.classList.toggle("missing",r.total_qty===0);
     item.classList.toggle("is-selling",listed(r));
-    var tag=item.querySelector(".sale-tag");
-    if(tag&&!listed(r))tag.remove();
-    if(!tag&&listed(r)){var b=document.createElement("span");b.className="sale-tag";b.textContent="판매중";item.querySelector(".photo").appendChild(b)}
   }
   function modify(item,c,change){
     var r=Object.assign({},stock(c));change(r);
@@ -251,7 +251,7 @@
         await showAdmin();
       }else{
         await loadStock();
-        $("saleOnly").checked=catalog.some(function(c){return listed(stock(c))});
+        $("saleOnly").checked=true;
         wireShop();summary();refreshList();paintCart();
       }
     }catch(err){$("status").hidden=false;$("status").textContent="페이지 준비 중 오류: "+err.message;console.error("Pokemon page",err)}

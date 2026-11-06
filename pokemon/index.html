@@ -4,7 +4,7 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#f6f8fc">
 <title>포켓몬 카드샵 · 카드 도감과 판매</title>
-<link rel="stylesheet" href="common.css?v=20261106-2">
+<link rel="stylesheet" href="common.css?v=20261106-3">
 </head>
 <body data-mode="shop">
 <header class="header"><div class="head-inner">
@@ -15,9 +15,10 @@
   <section class="hero"><div><span class="eyebrow">POKÉMON CARD COLLECTION</span><h1>포켓몬 카드 판매 · 세트별 도감</h1><p>세트별로 카드를 찾고, 판매중인 카드는 구매목록에 담아 문의해 주세요.</p></div><div class="hero-stats" id="summary">카드 도감 불러오는 중…</div></section>
   <section class="toolbar" aria-label="카드 검색 필터">
     <label>세트<select id="setFilter"><option value="">전체 세트</option></select></label>
+    <label>카드 종류<select id="typeFilter"><option value="">전체 종류</option><option value="pokemon">포켓몬</option><option value="trainer">트레이너스 전체</option><option value="item">└ 아이템</option><option value="tool">└ 포켓몬 도구</option><option value="supporter">└ 서포트</option><option value="stadium">└ 스타디움</option><option value="energy">에너지</option></select></label>
     <label>등급<select id="rarityFilter"><option value="">전체 등급</option></select></label>
     <label class="search-field">카드 검색<input id="searchInput" type="search" placeholder="카드명 / 번호 / 세트명"></label>
-    <label class="inline-check"><input id="saleOnly" type="checkbox">판매중만 보기</label>
+    <label class="inline-check"><input id="saleOnly" type="checkbox" checked>판매중만 보기</label>
   </section>
   <div class="list-header"><div><h2 id="resultTitle">카드 목록</h2><span id="listHint">번호순으로 표시됩니다.</span></div><span class="result-count" id="resultCount"></span></div>
   <div id="status" class="status">도감 정보를 불러오는 중입니다…</div>
@@ -28,6 +29,6 @@
 <div id="cartOverlay" class="cart-overlay" hidden><section class="cart-sheet" role="dialog" aria-modal="true" aria-label="포켓몬 구매목록"><div class="cart-top"><h2>구매목록</h2><button id="closeCart" type="button">닫기</button></div><div id="cartItems" class="cart-items"></div><div class="cart-bottom"><div id="cartSummary"></div><button id="copyCart" type="button" class="primary">구매목록 복사</button><a id="kakaoLink" class="kakao" target="_blank" rel="noopener" hidden>카카오톡 문의 열기</a><small>수량·가격은 문의 시 최종 확인됩니다.</small></div></section></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="../config.js?v=20261003-2"></script>
-<script src="app.js?v=20261106-2"></script>
+<script src="app.js?v=20261106-3"></script>
 </body>
 </html>

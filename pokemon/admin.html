@@ -4,7 +4,7 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#f6f8fc">
 <title>포켓몬 카드 관리자 · 재고와 판매 관리</title>
-<link rel="stylesheet" href="common.css?v=20261106-2">
+<link rel="stylesheet" href="common.css?v=20261106-3">
 </head>
 <body data-mode="admin">
 <header class="header"><div class="head-inner">
@@ -17,8 +17,9 @@
   <section id="adminMain" hidden>
     <div class="admin-actions"><span id="saveStatus">기존 기록을 불러오는 중…</span><button id="refreshBtn" type="button">↻ 재고 갱신</button></div>
     <div class="notice">기존 체크리스트의 보유 상태와 수량을 <b>참고용</b>으로 가져왔습니다. 판매 전 해당 카드의 <b>수량 확인</b>을 체크해 주세요. 보관 1장은 판매가능 수량에서 제외됩니다.</div>
-    <section class="toolbar" aria-label="관리자 카드 필터">
+    <section class="toolbar admin-toolbar" aria-label="관리자 카드 필터">
       <label>세트<select id="setFilter"><option value="">전체 세트</option></select></label>
+      <label>카드 종류<select id="typeFilter"><option value="">전체 종류</option><option value="pokemon">포켓몬</option><option value="trainer">트레이너스 전체</option><option value="item">└ 아이템</option><option value="tool">└ 포켓몬 도구</option><option value="supporter">└ 서포트</option><option value="stadium">└ 스타디움</option><option value="energy">에너지</option></select></label>
       <label>등급<select id="rarityFilter"><option value="">전체 등급</option></select></label>
       <label class="search-field">번호·이름 검색<input id="searchInput" type="search" placeholder="예: M5-001 또는 카드명"></label>
       <label>보기<select id="adminFilter"><option value="">전체 카드</option><option value="owned">보유 카드만</option><option value="missing">미보유만</option><option value="unverified">미확인만</option><option value="selling">판매중만</option></select></label>
@@ -29,6 +30,6 @@
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="../config.js?v=20261003-2"></script>
-<script src="app.js?v=20261106-2"></script>
+<script src="app.js?v=20261106-3"></script>
 </body>
 </html>
