@@ -23,41 +23,42 @@ jobs:
           endpoint='https://content.publishing.riotgames.com/publishing-content/v2.0/public/channel/riftbound_website/list/riftbound_gallery_cards'
           mapping={}
           for locale in ['en_US','ko_KR']:
-            offset=0
-            while True:
-              try:
-                data=json.loads(get(endpoint+'?'+urllib.parse.urlencode({'locale':locale,'from':offset,'limit':200})))['data']
-              except Exception as e:
-                print(locale,'feed error',e); break
+            try:
+              data=json.loads(get(endpoint+'?'+urllib.parse.urlencode({'locale':locale,'from':0,'limit':2000})))['data']
+              print(locale,'records',len(data))
               for c in data:
-                code=c.get('publicCode') or ''
+                code=str(c.get('publicCode') or '')
                 id_=str(c.get('id') or '')
-                m=re.fullmatch(r'OGN-(299|30[0-9]|310|303a)\*/298',code,re.I)
-                if not m:
-                  m=re.match(r'ogn-(299|30[0-9]|310|303a)(?:-star|\*)-298',id_,re.I)
+                m=re.search(r'OGN-(299|30[0-9]|310|303a)\*/298',code,re.I)
+                if not m: m=re.match(r'ogn-(299|30[0-9]|310|303a)(?:-star|\*)-298',id_,re.I)
                 url=(c.get('cardImage') or {}).get('url')
                 if m and url:
                   key='OGN-'+m.group(1).upper()+'SIG-FOIL'
                   mapping[key]={'url':url,'language':locale,'source':'Riot card gallery','code':code}
-              if len(data)<200 or offset>=1800: break
-              offset+=200
+            except Exception as e: print(locale,'feed error',e)
           try:
-            html=get('https://cardham.app/global/')
-            soup=BeautifulSoup(html,'html.parser')
+            soup=BeautifulSoup(get('https://cardham.app/global/'),'html.parser')
             for img in soup.find_all('img'):
               alt=img.get('alt','')
-              if 'signature' not in alt.lower() or 'ahri' not in alt.lower(): continue
-              for parent in list(img.parents)[:5]:
+              if 'signature' not in alt.lower(): continue
+              for parent in list(img.parents)[:6]:
                 txt=parent.get_text(' ',strip=True)
-                if re.search(r'303as/298|303a\*/298|303a/298 S',txt,re.I) and 'Korea-only Hanbok' in txt and len(txt)<450:
-                  src=img.get('src') or img.get('data-src')
-                  if src and not src.startswith('data:'):
-                    url=urllib.parse.urljoin('https://cardham.app/global/',src)
-                    mapping['OGN-303ASIG-FOIL']={'url':url,'language':'ko_KR','source':'CardHam exact signature catalog','code':'OGN-303a/298 S'}
-                    break
-          except Exception as e: print('Hanbok source error',e)
+                if len(txt)>450: break
+                m=re.search(r'(299|30[0-9]|310|303as|303a\*)\s*\*?/298',txt,re.I)
+                if not m: continue
+                n=m.group(1).lower().replace('as','a').replace('*','')
+                if n=='303' and 'Korea-only Hanbok' in txt: continue
+                src=img.get('src') or img.get('data-src')
+                if src and not src.startswith('data:'):
+                  url=urllib.parse.urljoin('https://cardham.app/global/',src)
+                  if not url.startswith('https://cardham.app/'): continue
+                  key='OGN-'+n.upper()+'SIG-FOIL'
+                  print(key,alt,url)
+                  mapping[key]={'url':url,'language':'ko_KR','source':'CardHam signature catalog','code':m.group(0)}
+                  break
+          except Exception as e: print('CardHam source error',e)
           print(json.dumps(mapping,ensure_ascii=False,indent=2))
-          if len([k for k in mapping if k!='OGN-303ASIG-FOIL'])<12: raise RuntimeError('Incomplete signature map')
+          if len(mapping)<13 or 'OGN-303ASIG-FOIL' not in mapping: raise RuntimeError('Incomplete signature map')
           pathlib.Path('assets/signature-images.json').write_text(json.dumps(mapping,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
           PY
       - name: Commit verified map
