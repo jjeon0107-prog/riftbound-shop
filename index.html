@@ -1316,26 +1316,23 @@ function isCUFoil(c){
 function cardImageCandidates(c) {
   const list = [];
   if (c.image_url) list.push(c.image_url);
-
   const cardNo = String(c.card_no || "");
-  const m = cardNo.match(/OGN-([0-9]{3}[a-z]?|[0-9]{3}\*)/i);
-
+  const m = cardNo.match(/OGN-([0-9]{3}[a-z]?(?:\*)?)(?=\/|\s|$)/i);
   if (m) {
     const raw = m[1].toLowerCase();
-
-    if (raw.endsWith("*")) {
-      const n = raw.replace("*", "");
-      list.push(`https://d3a8eduw4bm8.cloudfront.net/riftbound/cards/ogn/${n}-star-kr.webp`);
-      list.push(`https://d3a8eduw4bm8.cloudfront.net/riftbound/cards/ogn/${n}-signature-kr.webp`);
-      list.push(`https://d3a8eduw4bm8.cloudfront.net/riftbound/cards/ogn/${n}-kr.webp`);
-      list.push(`https://static.dotgg.gg/riftbound/cards/OGN-${n}-STAR.webp`);
-      list.push(`https://static.dotgg.gg/riftbound/cards/OGN-${n}.webp`);
+    const n = raw.replace(/\*$/, "");
+    if (isSignature(c) || raw.endsWith("*")) {
+      // Never fall back to the unsigned overnumber for a signature printing.
+      if(n !== "303a") {
+        list.push(`https://d3a8eduw4bm8.cloudfront.net/riftbound/cards/ogn/${n}-star-kr.webp`);
+        list.push(`https://d3a8eduw4bm8.cloudfront.net/riftbound/cards/ogn/${n}-signature-kr.webp`);
+        list.push(`https://static.dotgg.gg/riftbound/cards/OGN-${n}-STAR.webp`);
+      }
     } else {
       list.push(`https://d3a8eduw4bm8.cloudfront.net/riftbound/cards/ogn/${raw}-kr.webp`);
       list.push(`https://static.dotgg.gg/riftbound/cards/OGN-${raw.toUpperCase()}.webp`);
     }
   }
-
   return [...new Set(list.filter(Boolean))];
 }
 
