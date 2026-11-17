@@ -59,6 +59,18 @@ jobs:
           except Exception as e: print('CardHam source error',e)
           print(json.dumps(mapping,ensure_ascii=False,indent=2))
           if len(mapping)<13 or 'OGN-303ASIG-FOIL' not in mapping: raise RuntimeError('Incomplete signature map')
+          import hashlib
+          hashes=set()
+          for key, item in sorted(mapping.items()):
+            req=urllib.request.Request(item['url'], headers={'User-Agent':'Mozilla/5.0','Referer':'https://jjeon0107-prog.github.io/riftbound-shop/'})
+            with urllib.request.urlopen(req,timeout=20) as response:
+              data=response.read()
+              kind=response.headers.get('Content-Type','')
+              if not kind.startswith('image/') or len(data)<1000: raise RuntimeError(key+' invalid image: '+kind)
+              digest=hashlib.sha256(data).hexdigest()
+              if digest in hashes: raise RuntimeError(key+' duplicate image')
+              hashes.add(digest)
+              print('Verified',key,response.status,kind,len(data))
           pathlib.Path('assets/signature-images.json').write_text(json.dumps(mapping,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
           PY
       - name: Commit verified map
