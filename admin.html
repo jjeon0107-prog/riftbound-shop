@@ -1574,22 +1574,22 @@ function isCUFoil(c){
 function imgs(c){
   let a=[];
   if(c.image_url)a.push(c.image_url);
-  const m=String(c.card_no||"").match(/OGN-([0-9]{3}[a-z]?|[0-9]{3}\*)/i);
+  const m=String(c.card_no||"").match(/OGN-([0-9]{3}[a-z]?(?:\*)?)(?=\/|\s|$)/i);
   if(m){
-    let r=m[1].toLowerCase();
-    if(r.endsWith("*")){
-      let n=r.replace("*","");
-      a.push(
+    let r=m[1].toLowerCase(),n=r.replace(/\*$/,"");
+    if(isSignature(c)||r.endsWith("*")){
+      if(n!=="303a")a.push(
         `https://d3a8eduw4bm8.cloudfront.net/riftbound/cards/ogn/${n}-star-kr.webp`,
         `https://d3a8eduw4bm8.cloudfront.net/riftbound/cards/ogn/${n}-signature-kr.webp`,
-        `https://d3a8eduw4bm8.cloudfront.net/riftbound/cards/ogn/${n}-kr.webp`
+        `https://static.dotgg.gg/riftbound/cards/OGN-${n}-STAR.webp`
       );
     }else{
       a.push(`https://d3a8eduw4bm8.cloudfront.net/riftbound/cards/ogn/${r}-kr.webp`);
     }
   }
-  return [...new Set(a)];
+  return [...new Set(a.filter(Boolean))];
 }
+
 function ni(i){
   try{
     let a=JSON.parse(i.dataset.f||"[]");
