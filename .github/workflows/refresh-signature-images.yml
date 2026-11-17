@@ -1,0 +1,68 @@
+name: Refresh Korean signature image map
+on:
+  push:
+    paths:
+      - .github/workflows/refresh-signature-images.yml
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Resolve exact signature printings
+        run: |
+          python3 -m pip install --quiet beautifulsoup4
+          python3 - <<'PY'
+          import json,re,pathlib,urllib.request,urllib.parse
+          from bs4 import BeautifulSoup
+          def get(url):
+            req=urllib.request.Request(url,headers={'User-Agent':'Mozilla/5.0','Accept':'*/*'})
+            with urllib.request.urlopen(req,timeout=30) as r: return r.read()
+          endpoint='https://content.publishing.riotgames.com/publishing-content/v2.0/public/channel/riftbound_website/list/riftbound_gallery_cards'
+          mapping={}
+          for locale in ['en_US','ko_KR']:
+            offset=0
+            while True:
+              try:
+                data=json.loads(get(endpoint+'?'+urllib.parse.urlencode({'locale':locale,'from':offset,'limit':200})))['data']
+              except Exception as e:
+                print(locale,'feed error',e); break
+              for c in data:
+                code=c.get('publicCode') or ''
+                id_=str(c.get('id') or '')
+                m=re.fullmatch(r'OGN-(299|30[0-9]|310|303a)\*/298',code,re.I)
+                if not m:
+                  m=re.match(r'ogn-(299|30[0-9]|310|303a)(?:-star|\*)-298',id_,re.I)
+                url=(c.get('cardImage') or {}).get('url')
+                if m and url:
+                  key='OGN-'+m.group(1).upper()+'SIG-FOIL'
+                  mapping[key]={'url':url,'language':locale,'source':'Riot card gallery','code':code}
+              if len(data)<200 or offset>=1800: break
+              offset+=200
+          try:
+            html=get('https://cardham.app/global/')
+            soup=BeautifulSoup(html,'html.parser')
+            for img in soup.find_all('img'):
+              alt=img.get('alt','')
+              if 'signature' not in alt.lower() or 'ahri' not in alt.lower(): continue
+              for parent in list(img.parents)[:5]:
+                txt=parent.get_text(' ',strip=True)
+                if re.search(r'303as/298|303a\*/298|303a/298 S',txt,re.I) and 'Korea-only Hanbok' in txt and len(txt)<450:
+                  src=img.get('src') or img.get('data-src')
+                  if src and not src.startswith('data:'):
+                    url=urllib.parse.urljoin('https://cardham.app/global/',src)
+                    mapping['OGN-303ASIG-FOIL']={'url':url,'language':'ko_KR','source':'CardHam exact signature catalog','code':'OGN-303a/298 S'}
+                    break
+          except Exception as e: print('Hanbok source error',e)
+          print(json.dumps(mapping,ensure_ascii=False,indent=2))
+          if len([k for k in mapping if k!='OGN-303ASIG-FOIL'])<12: raise RuntimeError('Incomplete signature map')
+          pathlib.Path('assets/signature-images.json').write_text(json.dumps(mapping,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+          PY
+      - name: Commit verified map
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add assets/signature-images.json
+          git diff --cached --quiet || (git commit -m 'data: exact Korean Origins signature images' && git pull --rebase && git push)
