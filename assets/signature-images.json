@@ -1,0 +1,80 @@
+{
+  "OGN-304SIG-FOIL": {
+    "url": "https://cardham.app/img/c/304s.jpg",
+    "language": "ko_KR",
+    "source": "CardHam signature catalog",
+    "code": "304*/298"
+  },
+  "OGN-309SIG-FOIL": {
+    "url": "https://cardham.app/img/c/309s.jpg",
+    "language": "ko_KR",
+    "source": "CardHam signature catalog",
+    "code": "309*/298"
+  },
+  "OGN-299SIG-FOIL": {
+    "url": "https://cardham.app/img/c/299s.jpg",
+    "language": "ko_KR",
+    "source": "CardHam signature catalog",
+    "code": "299*/298"
+  },
+  "OGN-302SIG-FOIL": {
+    "url": "https://cardham.app/img/c/302s.jpg",
+    "language": "ko_KR",
+    "source": "CardHam signature catalog",
+    "code": "302*/298"
+  },
+  "OGN-308SIG-FOIL": {
+    "url": "https://cardham.app/img/c/308s.jpg",
+    "language": "ko_KR",
+    "source": "CardHam signature catalog",
+    "code": "308*/298"
+  },
+  "OGN-301SIG-FOIL": {
+    "url": "https://cardham.app/img/c/301s.jpg",
+    "language": "ko_KR",
+    "source": "CardHam signature catalog",
+    "code": "301*/298"
+  },
+  "OGN-303SIG-FOIL": {
+    "url": "https://cardham.app/img/c/303s.jpg",
+    "language": "ko_KR",
+    "source": "CardHam signature catalog",
+    "code": "303*/298"
+  },
+  "OGN-306SIG-FOIL": {
+    "url": "https://cardham.app/img/c/306s.jpg",
+    "language": "ko_KR",
+    "source": "CardHam signature catalog",
+    "code": "306*/298"
+  },
+  "OGN-300SIG-FOIL": {
+    "url": "https://cardham.app/img/c/300s.jpg",
+    "language": "ko_KR",
+    "source": "CardHam signature catalog",
+    "code": "300*/298"
+  },
+  "OGN-307SIG-FOIL": {
+    "url": "https://cardham.app/img/c/307s.jpg",
+    "language": "ko_KR",
+    "source": "CardHam signature catalog",
+    "code": "307*/298"
+  },
+  "OGN-310SIG-FOIL": {
+    "url": "https://cardham.app/img/c/310s.jpg",
+    "language": "ko_KR",
+    "source": "CardHam signature catalog",
+    "code": "310*/298"
+  },
+  "OGN-305SIG-FOIL": {
+    "url": "https://cardham.app/img/c/305s.jpg",
+    "language": "ko_KR",
+    "source": "CardHam signature catalog",
+    "code": "305*/298"
+  },
+  "OGN-303ASIG-FOIL": {
+    "url": "https://cardham.app/img/c/303as-3.jpg",
+    "language": "ko_KR",
+    "source": "CardHam signature catalog",
+    "code": "303as/298"
+  }
+}
