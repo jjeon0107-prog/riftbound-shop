@@ -15,7 +15,7 @@
   function listed(r){return !!(r&&r.sell_enabled&&r.stock_verified&&Number(r.price_krw)>0&&free(r)>0)}
   function photoUrl(c,r){
     var type=c.setCode.toUpperCase().indexOf("SV")===0?"SV":"MEGA";
-    var file=type+"~"+c.setCode+"~"+c.setCode+"_"+String(c.no).padStart(3,"0")+".png";
+    var file=type+"~"+c.setCode+"~"+c.setCode+"_"+(/^[0-9]+$/.test(String(c.no))?String(c.no).padStart(3,"0"):String(c.no))+".png";
     var base="https://pavilion-tcg.com/api/images/card/pkko/400/"+file+"?v=4";
     return {src:r.image_override||c.image||base,fallback:base};
   }
@@ -87,7 +87,7 @@
   function summary(){
     var held=catalog.filter(function(c){return stock(c).total_qty>0}).length;
     var sales=catalog.filter(function(c){return listed(stock(c))}).length;
-    $("summary").innerHTML=admin?"전체 "+catalog.length.toLocaleString()+"종<br>보유 참고 "+held.toLocaleString()+"종<br>판매 공개 "+sales+"종":"도감 "+catalog.length.toLocaleString()+"종<br>판매중 "+sales+"종";
+    $("summary").innerHTML=admin?"전체 "+catalog.length.toLocaleString()+"종<br>보유 "+held.toLocaleString()+"종<br>판매 공개 "+sales+"종":"도감 "+catalog.length.toLocaleString()+"종<br>판매중 "+sales+"종";
   }
   function append(){
     if(displayed>=matched.length)return;
