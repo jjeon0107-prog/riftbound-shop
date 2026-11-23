@@ -11,7 +11,7 @@
   var sets=[],catalog=[],byKey=new Map(),inventory=new Map(),matched=[],displayed=0,cart=new Map(),timers=new Map(),chains=new Map();
   var grid=$("cardGrid");
   function stock(c){return inventory.get(c.key)||{card_key:c.key,total_qty:0,binder_qty:0,price_krw:0,sell_enabled:false,stock_verified:false,legacy_import:false,language:"KO",condition:"NM",graded_by:"",grade:"",image_override:""}}
-  function free(r){return Math.max(0,Number(r.total_qty||0)-Number(r.binder_qty||0))}
+  function free(r){return Math.max(0,Math.trunc(Number(r.total_qty)||0))}
   function listed(r){return !!(r&&r.sell_enabled&&r.stock_verified&&Number(r.price_krw)>0&&free(r)>0)}
   function photoUrl(c,r){
     var type=c.setCode.toUpperCase().indexOf("SV")===0?"SV":"MEGA";
@@ -75,8 +75,8 @@
     var opt=function(value){return '<option value="'+value+'" '+(r.condition===value?"selected":"")+">"+value+"</option>"};
     return '<article class="card admin-card '+(listed(r)?"is-selling ":"")+(verified?"":"unverified ")+(n===0?"missing":"")+'" data-key="'+esc(c.key)+'">'+photo(c,r,i)+
       '<div class="card-body"><b class="card-name">'+esc(c.name)+'</b><span class="card-meta">'+esc(c.key)+" · "+esc(c.rarity)+" · "+esc(categoryLabels[c.cardType]||"종류 미분류")+(r.legacy_import?" · 기존자료":"")+'</span>'+
-      '<div class="stock-row"><button type="button" data-action="minus" aria-label="보유 1장 감소">−</button><span>보유 <strong class="stock-number">'+n+'</strong>장</span><button type="button" data-action="plus" aria-label="보유 1장 증가">+</button></div>'+
-      '<div class="state-row"><label><input type="checkbox" data-field="binder_qty" '+(r.binder_qty?"checked":"")+(n?"":" disabled")+'>보관 1장</label><span class="available">판매가능 '+free(r)+'장</span></div>'+
+      '<div class="stock-row"><button type="button" data-action="minus" aria-label="보유 1장 감소">−</button><span>판매 <strong class="stock-number">'+n+'</strong>장</span><button type="button" data-action="plus" aria-label="보유 1장 증가">+</button></div>'+
+      '<div class="state-row"><span class="available">판매가능 '+free(r)+'장 (입력 수량 전부)</span></div>'+
       '<label class="price-row">판매가 <input type="number" data-field="price_krw" min="0" step="100" inputmode="numeric" value="'+(Number(r.price_krw)||0)+'">원</label>'+
       '<div class="checkline"><label><input type="checkbox" data-field="stock_verified" '+(verified?"checked":"")+'>수량 확인</label><label><input type="checkbox" data-field="sell_enabled" '+(r.sell_enabled?"checked":"")+'>판매 공개</label></div>'+
       '<details><summary>상태 · 언어 · 등급 · 이미지 수정</summary><div class="extra-fields"><label>언어<select data-field="language"><option value="KO" '+(r.language==="KO"?"selected":"")+'>한글판</option><option value="JA" '+(r.language==="JA"?"selected":"")+'>일본판</option></select></label>'+
@@ -87,7 +87,7 @@
   function summary(){
     var held=catalog.filter(function(c){return stock(c).total_qty>0}).length;
     var sales=catalog.filter(function(c){return listed(stock(c))}).length;
-    $("summary").innerHTML=admin?"전체 "+catalog.length.toLocaleString()+"종<br>보유 "+held.toLocaleString()+"종<br>판매 공개 "+sales+"종":"도감 "+catalog.length.toLocaleString()+"종<br>판매중 "+sales+"종";
+    $("summary").innerHTML=admin?"전체 "+catalog.length.toLocaleString()+"종<br>판매 재고 "+held.toLocaleString()+"종<br>판매 공개 "+sales+"종":"도감 "+catalog.length.toLocaleString()+"종<br>판매중 "+sales+"종";
   }
   function append(){
     if(displayed>=matched.length)return;
@@ -119,7 +119,7 @@
     clearTimeout(timers.get(c.key));saveStatus("저장 대기…");
     timers.set(c.key,setTimeout(function(){
       timers.delete(c.key);
-      var r=stock(c),payload={card_key:c.key,total_qty:r.total_qty,binder_qty:r.binder_qty,price_krw:r.price_krw,sell_enabled:r.sell_enabled,stock_verified:r.stock_verified,legacy_import:r.legacy_import,language:r.language,condition:r.condition,graded_by:r.graded_by,grade:r.grade,image_override:r.image_override,updated_at:new Date().toISOString()};
+      var r=stock(c),payload={card_key:c.key,total_qty:r.total_qty,binder_qty:0,price_krw:r.price_krw,sell_enabled:r.sell_enabled,stock_verified:r.stock_verified,legacy_import:r.legacy_import,language:r.language,condition:r.condition,graded_by:r.graded_by,grade:r.grade,image_override:r.image_override,updated_at:new Date().toISOString()};
       var previous=chains.get(c.key)||Promise.resolve();
       var next=previous.catch(function(){}).then(async function(){
         saveStatus("저장 중…");
@@ -134,7 +134,6 @@
     var r=stock(c);
     item.querySelector(".stock-number").textContent=r.total_qty;
     item.querySelector(".available").textContent="판매가능 "+free(r)+"장";
-    var binder=item.querySelector('[data-field="binder_qty"]');binder.checked=!!r.binder_qty;binder.disabled=r.total_qty===0;
     item.querySelector('[data-field="stock_verified"]').checked=!!r.stock_verified;
     item.querySelector('[data-field="sell_enabled"]').checked=!!r.sell_enabled;
     item.classList.toggle("unverified",!r.stock_verified);
@@ -144,7 +143,7 @@
   function modify(item,c,change){
     var r=Object.assign({},stock(c));change(r);
     r.total_qty=Math.max(0,Math.trunc(Number(r.total_qty)||0));
-    r.binder_qty=Math.max(0,Math.min(r.total_qty,Math.trunc(Number(r.binder_qty)||0)));
+    r.binder_qty=0;
     r.price_krw=Math.max(0,Math.trunc(Number(r.price_krw)||0));
     if(!r.stock_verified||!r.price_krw||free(r)===0)r.sell_enabled=false;
     inventory.set(c.key,r);paint(item,c);summary();queueSave(c);
@@ -163,7 +162,7 @@
       var item=btn.closest("[data-key]"),c=byKey.get(item&&item.dataset.key);if(!c)return;
       if(btn.dataset.action==="minus"&&stock(c).total_qty===0)return;
       modify(item,c,function(r){
-        if(btn.dataset.action==="plus"){var zero=r.total_qty===0;r.total_qty++;if(zero)r.binder_qty=1}
+        if(btn.dataset.action==="plus")r.total_qty++;
         if(btn.dataset.action==="minus")r.total_qty=Math.max(0,r.total_qty-1);
         r.stock_verified=true;
       });
@@ -179,8 +178,7 @@
         alert("사진 주소는 https:// 로 시작해야 합니다.");inp.value=previous.image_override||"";return;
       }
       modify(item,c,function(r){
-        if(field==="binder_qty")r.binder_qty=checked?1:0;
-        else if(field==="sell_enabled"||field==="stock_verified")r[field]=checked;
+        if(field==="sell_enabled"||field==="stock_verified")r[field]=checked;
         else if(field==="price_krw")r[field]=Number(inp.value)||0;
         else r[field]=inp.value.trim();
       });
